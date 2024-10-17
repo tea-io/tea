@@ -10,6 +10,6 @@ std::string banner = R"(
 )";
 
 int main() {
-  log(NONE, banner.c_str());
-  return 0;
+    log(NONE, banner.c_str());
+    return 0;
 };
