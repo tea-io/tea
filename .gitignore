@@ -1,3 +1,5 @@
 proto/proto.pb.o
 proto/*.pb.cc
 proto/*.pb.h
+filesystem/filesystem
+server/server

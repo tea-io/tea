@@ -2,7 +2,7 @@ CC := clang++
 C_FLAGS := -g -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs protobuf` -pthread
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=30
 SERVER_FLAGS := 
-COMMON := 
+COMMON := common/log.cpp
 SERVER_FILES := 
 FS_FILES :=
 PROTO := proto/packets.proto
