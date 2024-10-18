@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+enum Type {
+  INIT_REQUEST = 0;
+  INIT_RESPONSE = 1;
+}
+
+message InitRequest { int32 error = 1; }
+
+message InitResponse { int32 error = 1; }

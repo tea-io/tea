@@ -11,15 +11,15 @@ C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs pr
 
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=30
 SERVER_FLAGS := 
-COMMON := common/log.cpp
-SERVER_FILES := 
-FS_FILES :=
-PROTO := proto/packets.proto
+COMMON := common/log.cpp common/io.cpp common/header.cpp
+SERVER_FILES := server/tcp.cpp 
+FS_FILES := filesystem/tcp.cpp 
+PROTO := proto/messages.proto
 
 TEST_FLAGS := `pkg-config --cflags catch2-with-main`
 TEST_LIBS := `pkg-config --libs catch2-with-main`
-TEST_DIR := tests/catch2
-TEST_FILES := $(wildcard $(TEST_DIR)/*.cpp)
+TEST_DIR := tests
+TEST_FILES := $(wildcard $(TEST_DIR)/**/*.cpp $(TEST_DIR)/*.cpp)
 
 all: build
 
@@ -37,7 +37,7 @@ filesystem-run: filesystem
 filesystem: filesystem/filesystem
 
 filesystem/filesystem: proto/proto.pb.o
-	$(CC) $(C_FLAGS) $(FS_FLAGS) -o $@ filesystem/main.cpp $(COMMON) $(FS_FILES) proto/proto.pb.o
+	$(CC) $(C_FLAGS) $(FS_FLAGS) -o $@ filesystem/main.cpp $(COMMON) $(FS_FILES) proto/proto.pb.o filesystem/main.cpp
 
 .PHONY: filesystem-clean
 filesystem-clean:
@@ -51,7 +51,7 @@ server-run: server
 server: server/server
 
 server/server: proto/proto.pb.o
-	$(CC) $(C_FLAGS) $(SERVER_FLAGS) -o $@ server/main.cpp $(COMMON) $(SERVER_FILES) proto/proto.pb.o
+	$(CC) $(C_FLAGS) $(SERVER_FLAGS) -o $@ server/main.cpp $(COMMON) $(SERVER_FILES) proto/proto.pb.o server/main.cpp
 
 .PHONY: server-clean
 server-clean:
@@ -80,7 +80,7 @@ test-run: test
 
 .PHONY: test
 test: $(TEST_FILES) proto/proto.pb.o
-	$(CC) $(C_FLAGS) $(TEST_FLAGS) -o tests/test-runner $(TEST_FILES) $(COMMON) proto/proto.pb.o $(TEST_LIBS)
+	$(CC) $(C_FLAGS) $(TEST_FLAGS) -o tests/test-runner $(TEST_FILES) $(COMMON) $(SERVER_FILES) $(FS_FILES) proto/proto.pb.o $(TEST_LIBS)
 
 .PHONY: test-clean
 test-clean:
