@@ -62,7 +62,7 @@ proto: proto/proto.pb.o
 
 proto/proto.pb.o:
 	protoc -I=proto/ --cpp_out=proto/ $(PROTO)
-	$(CC) $(CFLAGS) -c proto/*.pb.cc -o proto/proto.pb.o
+	$(CC) $(CFLAGS) -g `pkg-config --cflags --libs protobuf` -c proto/*.pb.cc -o proto/proto.pb.o
 
 .PHONY: proto-clean
 proto-clean:
