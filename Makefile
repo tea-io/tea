@@ -7,16 +7,18 @@ SERVER_FILES := server/tcp.cpp server/main.cpp
 FS_FILES := filesystem/tcp.cpp filesystem/main.cpp
 PROTO := proto/messages.proto
 
+TEST_FLAGS := `pkg-config --cflags catch2-with-main`
+TEST_LIBS := `pkg-config --libs catch2-with-main`
+TEST_DIR := tests/catch2
+TEST_FILES := $(wildcard $(TEST_DIR)/*.cpp)
+
 all: build
 
 .PHONY: build
-build: filesystem server
+build: filesystem server test-binary
 
 .PHONY: clean
-clean: filesystem-clean server-clean
-
-.PHONY: clean-all
-clean-all: clean proto-clean
+clean: filesystem-clean server-clean proto-clean test-clean
 
 .PHONY: filesystem-run
 filesystem-run: filesystem 
@@ -62,3 +64,15 @@ format:
 
 check-format:
 	clang-format --dry-run --Werror proto/*.proto **/*.h **/*.cpp
+
+.PHONY: test-run
+test-run: test
+	./tests/test-runner
+
+.PHONY: test
+test: $(TEST_FILES) proto/proto.pb.o
+	$(CC) $(C_FLAGS) $(TEST_FLAGS) -o tests/test-runner $(TEST_FILES) $(COMMON) proto/proto.pb.o $(TEST_LIBS)
+
+.PHONY: test-clean
+test-clean:
+	rm -f tests/test-runner
