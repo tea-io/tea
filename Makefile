@@ -56,3 +56,9 @@ proto/proto.pb.o:
 .PHONY: proto-clean
 proto-clean:
 	rm -rf proto/proto.pb.o proto/*.pb.*
+
+format: 
+	clang-format -i $(COMMON) $(FS_FILES) $(SERVER_FILES)
+
+check-format:
+	clang-format --dry-run --Werror $(COMMON) $(FS_FILES) $(SERVER_FILES)
