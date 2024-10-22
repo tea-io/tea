@@ -9,7 +9,7 @@
 
 bool debug_log = true;
 
-static void raw_log(int level, const char *content) {
+void raw_log(int level, const char *content) {
     switch (level) {
     case INFO:
         fprintf(stdout, "%s[INFO]%s %s\n", GREEN, NORMAL, content);

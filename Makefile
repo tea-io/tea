@@ -9,11 +9,11 @@ C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs pr
 	-fanalyzer -fanalyzer-transitivity \
 	-fsanitize=address,leak,undefined,null,return,signed-integer-overflow -fsanitize-trap=undefined -fno-sanitize-recover=all
 
-FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=30
+FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=31
 SERVER_FLAGS := 
 COMMON := common/log.cpp common/io.cpp common/header.cpp
-SERVER_FILES := server/tcp.cpp 
-FS_FILES := filesystem/tcp.cpp 
+SERVER_FILES := server/tcp.cpp server/fs.cpp
+FS_FILES := filesystem/tcp.cpp filesystem/fs.cpp filesystem/log.cpp
 PROTO := proto/messages.proto
 
 TEST_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs protobuf` -pthread `pkg-config --cflags catch2-with-main`
@@ -31,7 +31,7 @@ clean: filesystem-clean server-clean proto-clean test-clean
 
 .PHONY: filesystem-run
 filesystem-run: filesystem 
-	./filesystem/filesystem -f test/
+	./filesystem/filesystem --host=127.0.0.1 -f test-dir/
 
 .PHONY: filesystem 
 filesystem: filesystem/filesystem
@@ -80,7 +80,7 @@ test-run: test
 
 .PHONY: test
 test: $(TEST_FILES) proto/proto.pb.o
-	$(CC) $(TEST_FLAGS) -o tests/test-runner $(TEST_FILES) $(COMMON) $(SERVER_FILES) $(FS_FILES) proto/proto.pb.o $(TEST_LIBS)
+	$(CC) $(TEST_FLAGS) $(FS_FLAGS) -o tests/test-runner $(TEST_FILES) $(COMMON) $(SERVER_FILES) $(FS_FILES) proto/proto.pb.o $(TEST_LIBS)
 
 .PHONY: test-clean
 test-clean:

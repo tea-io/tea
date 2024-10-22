@@ -34,9 +34,7 @@ int send_message(int sock, int id, Type type, google::protobuf::Message *body) {
         return -1;
     }
     std::string debug = body->DebugString();
-    debug.pop_back();
     log(DEBUG, sock, "(%d) Send message success: %s - %d bytes", id, debug.c_str(), len);
-
     return len;
 }
 
@@ -55,6 +53,17 @@ int full_read(int fd, char *buf, int size) {
         recived += len;
     }
     return recived;
+}
+
+template <typename T> int recv_handler_caller(char *recv_buffer, Header *header, int sock, int (*handler)(int sock, int id, T *response)) {
+    T request;
+    request.ParseFromArray(recv_buffer, header->size);
+    std::string message = typeid(T).name();
+    message += request.DebugString();
+    message.pop_back();
+    log(DEBUG, sock, message.c_str());
+    int ret = handler(sock, header->id, &request);
+    return ret;
 }
 
 // Handle recv messages, 1 on success, 0 on EOF, -1 on error
@@ -83,33 +92,22 @@ int handle_recv(int sock, recv_handlers &handlers) {
     std::string message = "";
     switch (header->type) {
     case Type::INIT_REQUEST: {
-        InitRequest request;
-        request.ParseFromArray(recv_buffer, header->size);
-        message = "InitRequest: ";
-        message = request.DebugString();
-        ret = handlers.init_request(sock, header->id, &request);
+        ret = recv_handler_caller<InitRequest>(recv_buffer, header, sock, handlers.init_request);
         break;
     }
     case Type::INIT_RESPONSE: {
-        InitResponse response;
-        response.ParseFromArray(recv_buffer, header->size);
-        message = "InitResponse: ";
-        message = response.DebugString();
-        ret = handlers.init_response(sock, header->id, &response);
+        ret = recv_handler_caller<InitResponse>(recv_buffer, header, sock, handlers.init_response);
         break;
     }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
     }
-    if (message != "") {
-        message.pop_back();
-        log(DEBUG, sock, message.c_str());
-    }
     if (ret < 0) {
         log(DEBUG, sock, "Handler failed: %d", ret);
     } else {
         log(DEBUG, sock, "Handler success: %d", ret);
+        ret = 1;
     }
     delete header;
     delete[] recv_buffer;

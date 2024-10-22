@@ -1,7 +1,8 @@
 #include "fs.h"
 #include "../proto/messages.pb.h"
 
-int init_request(int sock, int id, InitRequest *req) {
+static int init_request(int sock, int id, InitRequest *req) {
+    (void)req;
     InitResponse res;
     res.set_error(0);
     int err = send_message(sock, id, Type::INIT_RESPONSE, &res);
