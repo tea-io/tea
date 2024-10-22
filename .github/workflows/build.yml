@@ -30,3 +30,17 @@ jobs:
       with:
         name: server
         path: ./server/server
+
+  check-formatting:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install nix
+      uses: cachix/install-nix-action@v27
+      with: 
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check formatting
+      run: nix develop --command bash -c "make check-format"
