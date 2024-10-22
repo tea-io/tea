@@ -1,5 +1,5 @@
-CC := clang++
-C_FLAGS := -g -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs protobuf` -pthread
+CC := g++
+C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs protobuf` -pthread
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=30
 SERVER_FLAGS := 
 COMMON := common/log.cpp
