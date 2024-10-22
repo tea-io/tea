@@ -113,3 +113,6 @@ proto/*.pb.cc
 proto/*.pb.h
 filesystem/filesystem
 server/server
+
+tests/catch2/**.o
+tests/test-runner
