@@ -59,6 +59,21 @@ static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_fi
     return -res.error();
 };
 
+static int open_fs(const char *path, struct fuse_file_info *fi) {
+    OpenRequest req = OpenRequest();
+    req.set_path(path);
+    req.set_flags(fi->flags);
+    OpenResponse res;
+    int err = request_response<OpenResponse>(sock, req, &res, OPEN_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to open file: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -66,6 +81,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
     cfg = cfg_param;
     fuse_operations ops = {
         .getattr = get_attr_request,
+        .open = open_fs,
         .init = init,
         .destroy = destroy,
     };
