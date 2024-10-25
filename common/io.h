@@ -13,6 +13,8 @@ struct recv_handlers {
     int (*init_response)(int sock, int id, InitResponse *response);
     int (*get_attr_request)(int sock, int id, GetAttrRequest *request);
     int (*get_attr_response)(int sock, int id, GetAttrResponse *response);
+    int (*open_request)(int sock, int id, OpenRequest *request);
+    int (*open_response)(int sock, int id, OpenResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

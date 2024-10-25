@@ -5,6 +5,8 @@ enum Type {
   INIT_RESPONSE = 1;
   GET_ATTR_REQUEST = 2;
   GET_ATTR_RESPONSE = 3;
+  OPEN_REQUEST = 4;
+  OPEN_RESPONSE = 5;
 }
 
 message InitRequest { string name = 1; }
@@ -24,3 +26,10 @@ message GetAttrResponse {
   bool own = 8;
   bool gown = 9;
 }
+
+message OpenRequest {
+  string path = 1;
+  int32 flags = 2;
+}
+
+message OpenResponse { int32 error = 1; }
