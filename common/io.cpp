@@ -105,6 +105,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<GetAttrResponse>(recv_buffer, header, sock, handlers.get_attr_response);
         break;
     }
+    case Type::OPEN_REQUEST: {
+        ret = recv_handler_caller<OpenRequest>(recv_buffer, header, sock, handlers.open_request);
+        break;
+    }
+    case Type::OPEN_RESPONSE: {
+        ret = recv_handler_caller<OpenResponse>(recv_buffer, header, sock, handlers.open_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

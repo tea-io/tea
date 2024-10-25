@@ -47,3 +47,13 @@ TEST_CASE("stat") {
         REQUIRE(errno == ENOENT);
     };
 }
+
+TEST_CASE("open and close") {
+    int fd = open("project-dir/test.txt", O_RDWR | O_CREAT, 0644);
+    close(fd);
+    fd = open("mount-dir/test.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    int err = close(fd);
+    REQUIRE(err == 0);
+    remove("project-dir/test.txt");
+}

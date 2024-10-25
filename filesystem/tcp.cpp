@@ -29,7 +29,9 @@ template <typename T> int request_handler(int sock, int id, T message) {
 recv_handlers handlers = {.init_request = request_handler<InitRequest *>,
                           .init_response = response_handler<InitResponse *>,
                           .get_attr_request = request_handler<GetAttrRequest *>,
-                          .get_attr_response = response_handler<GetAttrResponse *>};
+                          .get_attr_response = response_handler<GetAttrResponse *>,
+                          .open_request = request_handler<OpenRequest *>,
+                          .open_response = response_handler<OpenResponse *>};
 
 int connect(std::string host, int port) {
     int sock;
