@@ -59,6 +59,27 @@ static int get_attr_request(int sock, int id, GetAttrRequest *req) {
     return 0;
 }
 
+static int open_request(int sock, int id, OpenRequest *req) {
+    OpenResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        int fd = open(path.c_str(), req->flags());
+        if (fd > 0) {
+            fds[req->path()] = fd;
+        } else {
+            res.set_error(errno);
+        }
+    }
+
+    int err = send_message(sock, id, Type::OPEN_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -73,5 +94,7 @@ recv_handlers get_handlers(std::string path) {
         .init_response = respons_handler<InitResponse *>,
         .get_attr_request = get_attr_request,
         .get_attr_response = respons_handler<GetAttrResponse *>,
+        .open_request = open_request,
+        .open_response = respons_handler<OpenResponse *>,
     };
 }
