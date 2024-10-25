@@ -5,6 +5,6 @@ enum Type {
   INIT_RESPONSE = 1;
 }
 
-message InitRequest { int32 error = 1; }
+message InitRequest { string name = 1; }
 
 message InitResponse { int32 error = 1; }

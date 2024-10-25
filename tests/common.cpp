@@ -52,7 +52,7 @@ TEST_CASE("full_read") {
 TEST_CASE("send_message") {
     auto [fd1, fd2] = testing_socket();
     InitRequest request;
-    request.set_error(2);
+    request.set_name("test");
     int err = send_message(fd1, 1, INIT_REQUEST, &request);
     REQUIRE(err > 0);
     char *buffer = new char[HEADER_SIZE + static_cast<int>(request.ByteSizeLong())];
@@ -64,7 +64,7 @@ TEST_CASE("send_message") {
     REQUIRE(header->type == INIT_REQUEST);
     InitRequest recv_request;
     recv_request.ParseFromArray(buffer + HEADER_SIZE, header->size);
-    REQUIRE(recv_request.error() == 2);
+    REQUIRE(recv_request.name() == "test");
     free(header);
     delete[] buffer;
     close(fd1);
@@ -74,7 +74,7 @@ TEST_CASE("send_message") {
 TEST_CASE("handle_recv") {
     auto [fd1, fd2] = testing_socket();
     InitRequest request;
-    request.set_error(2);
+    request.set_name("test");
     int err = send_message(fd1, 1, INIT_REQUEST, &request);
     REQUIRE(err > 0);
     recv_handlers handlers = {
@@ -82,7 +82,7 @@ TEST_CASE("handle_recv") {
             [](int sock, int id, InitRequest *request) {
                 (void)sock;
                 REQUIRE(id == 1);
-                REQUIRE(request->error() == 2);
+                REQUIRE(request->name() == "test");
                 return 1;
             },
         .init_response = nullptr,

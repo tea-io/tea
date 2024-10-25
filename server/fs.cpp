@@ -1,8 +1,15 @@
 #include "fs.h"
 #include "../proto/messages.pb.h"
 
+struct client_info {
+    int fd;
+    std::string name;
+};
+
+std::list<client_info> clients_info;
+
 static int init_request(int sock, int id, InitRequest *req) {
-    (void)req;
+    clients_info.push_back(client_info{.fd = sock, .name = req->name()});
     InitResponse res;
     res.set_error(0);
     int err = send_message(sock, id, Type::INIT_RESPONSE, &res);

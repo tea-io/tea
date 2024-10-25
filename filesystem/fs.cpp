@@ -4,12 +4,13 @@
 #include "tcp.h"
 
 int sock;
+config cfg;
 
-static void *init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
+static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
-    (void)cfg;
+    (void)f_cfg;
     InitRequest req = InitRequest();
-    req.set_error(0);
+    req.set_name(cfg.name);
     InitResponse res;
     int err = request_response<InitResponse>(sock, req, &res);
     if (err < 0) {
@@ -21,15 +22,17 @@ static void *init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
     return NULL;
 };
 
-void destroy(void *private_data) {
+static void destroy(void *private_data) {
+    (void)private_data;
     google::protobuf::ShutdownProtobufLibrary();
     close(sock);
 };
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-fuse_operations get_fuse_operations(int sockFd) {
-    sock = sockFd;
+fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
+    sock = sock_fd;
+    cfg = cfg_param;
     fuse_operations ops = {
         .init = init,
         .destroy = destroy,

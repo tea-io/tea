@@ -6,6 +6,7 @@
 #include <fuse3/fuse_log.h>
 #include <string>
 #include <thread>
+#include <unistd.h>
 
 std::string banner = R"(
  _                __
@@ -20,12 +21,13 @@ static struct options {
     int port;
     bool debug;
     bool show_help;
+    const char *name;
 } opts;
 
 #define OPTION(t, p) {t, offsetof(struct options, p), 1}
-static const struct fuse_opt option_spec[] = {OPTION("--host=%s", host), OPTION("-h=%s", host),       OPTION("--port=%d", port),
-                                              OPTION("-p=%d", port),     OPTION("-p %d", port),       OPTION("-d", debug),
-                                              OPTION("--debug", debug),  OPTION("--help", show_help), FUSE_OPT_END};
+static const struct fuse_opt option_spec[] = {
+    OPTION("--host=%s", host), OPTION("-h=%s", host),       OPTION("--port=%d", port), OPTION("-p=%d", port), OPTION("-d", debug),
+    OPTION("--debug", debug),  OPTION("--help", show_help), OPTION("--name=%s", name), OPTION("-n=%s", name), FUSE_OPT_END};
 
 static void show_help(char *progname) {
     log(NONE, "usage: %s [options] <mountpoint>\n\n", progname);
@@ -43,7 +45,9 @@ int main(int argc, char *argv[]) {
 
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
+    char *login = getlogin();
     opts.port = 5210;
+    opts.name = strdup(login);
     opts.host = NULL;
 
     if (fuse_opt_parse(&args, &opts, option_spec, NULL) == -1) {
@@ -70,7 +74,9 @@ int main(int argc, char *argv[]) {
         t = std::thread(recv_thread, sock);
     }
 
-    struct fuse_operations oper = get_fuse_operations(sock);
+    config cfg = {.name = opts.name};
+
+    struct fuse_operations oper = get_fuse_operations(sock, cfg);
 
     int ret = fuse_main(args.argc, args.argv, &oper, NULL);
     fuse_opt_free_args(&args);
