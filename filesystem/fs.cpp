@@ -21,12 +21,18 @@ static void *init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
     return NULL;
 };
 
+void destroy(void *private_data) {
+    google::protobuf::ShutdownProtobufLibrary();
+    close(sock);
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sockFd) {
     sock = sockFd;
     fuse_operations ops = {
         .init = init,
+        .destroy = destroy,
     };
     return ops;
 };
