@@ -15,7 +15,7 @@ TEST_FILES := $(wildcard $(TEST_DIR)/*.cpp)
 all: build
 
 .PHONY: build
-build: filesystem server test-binary
+build: filesystem server test
 
 .PHONY: clean
 clean: filesystem-clean server-clean proto-clean test-clean
