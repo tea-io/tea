@@ -243,4 +243,5 @@ WhitespaceSensitiveMacros:
   - PP_STRINGIZE
   - STRINGIZE
 ...
-
+Language: Proto
+DisableFormat: false

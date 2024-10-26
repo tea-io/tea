@@ -58,7 +58,7 @@ proto-clean:
 	rm -rf proto/proto.pb.o proto/*.pb.*
 
 format: 
-	clang-format -i $(COMMON) $(FS_FILES) $(SERVER_FILES)
+	clang-format -i proto/*.proto **/*.h **/*.cpp
 
 check-format:
-	clang-format --dry-run --Werror $(COMMON) $(FS_FILES) $(SERVER_FILES)
+	clang-format --dry-run --Werror proto/*.proto **/*.h **/*.cpp
