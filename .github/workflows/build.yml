@@ -44,3 +44,17 @@ jobs:
 
     - name: Check formatting
       run: nix develop --command bash -c "make check-format"
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install nix
+      uses: cachix/install-nix-action@v27
+      with: 
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run unit tests
+      run: nix develop --command bash -c "make test-run"
