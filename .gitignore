@@ -115,7 +115,8 @@ filesystem/filesystem
 server/server
 
 tests/catch2/**.o
-tests/test-runner
+tests/unit-runner
+tests/acceptance-runner
 
 # result symlink that nix build produces
 result
