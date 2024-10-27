@@ -116,3 +116,6 @@ server/server
 
 tests/catch2/**.o
 tests/test-runner
+
+# result symlink that nix build produces
+result

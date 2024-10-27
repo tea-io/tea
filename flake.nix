@@ -31,6 +31,9 @@
         '';
 
         installPhase = ''
+          mkdir -p $out/bin
+          cp server/server $out/bin/tea-server
+          cp filesystem/filesystem $out/bin/tea-fs
         '';
       };
     };
