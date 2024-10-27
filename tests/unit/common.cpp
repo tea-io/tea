@@ -1,5 +1,6 @@
-#include "../common/header.h"
-#include "../common/io.h"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#include "../../common/header.h"
+#include "../../common/io.h"
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
 #include <future>
