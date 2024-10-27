@@ -19,6 +19,7 @@
           pkgs.gcc
           pkgs.clang-tools
           pkgs.clang
+          pkgs.catch2_3
 
           pkgs.protobuf
           pkgs.pkg-config
