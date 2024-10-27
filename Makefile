@@ -16,22 +16,23 @@ SERVER_FILES := server/tcp.cpp server/fs.cpp
 FS_FILES := filesystem/tcp.cpp filesystem/fs.cpp filesystem/log.cpp
 PROTO := proto/messages.proto
 
-TEST_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs protobuf` -pthread `pkg-config --cflags catch2-with-main`
+UNIT_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs protobuf` -pthread `pkg-config --cflags catch2-with-main`
+ACCEPTANCE_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags catch2-with-main`
 TEST_LIBS := `pkg-config --libs catch2-with-main`
-TEST_DIR := tests
-TEST_FILES := $(wildcard $(TEST_DIR)/**/*.cpp $(TEST_DIR)/*.cpp)
+UNIT_FILES := $(wildcard tests/unit/*.cpp)
+ACCEPTANCE_FILES := $(wildcard tests/acceptance/*.cpp)
 
 all: build
 
 .PHONY: build
-build: filesystem server test
+build: filesystem server
 
 .PHONY: clean
 clean: filesystem-clean server-clean proto-clean test-clean
 
 .PHONY: filesystem-run
 filesystem-run: filesystem 
-	./filesystem/filesystem --host=127.0.0.1 -f test-dir/
+	./filesystem/filesystem --host=127.0.0.1 -f mount-dir/
 
 .PHONY: filesystem 
 filesystem: filesystem/filesystem
@@ -45,7 +46,7 @@ filesystem-clean:
 
 .PHONY: server-run
 server-run: server
-	./server/server ~/name
+	./server/server project-dir
 
 .PHONY: server
 server: server/server
@@ -74,14 +75,23 @@ format:
 check-format:
 	clang-format --dry-run --Werror proto/*.proto **/*.h **/*.cpp
 
-.PHONY: test-run
-test-run: test
-	./tests/test-runner
+.PHONY: unit-run
+unit-run: unit
+	./tests/unit-runner
 
-.PHONY: test
-test: $(TEST_FILES) proto/proto.pb.o
-	$(CC) $(TEST_FLAGS) $(FS_FLAGS) -o tests/test-runner $(TEST_FILES) $(COMMON) $(SERVER_FILES) $(FS_FILES) proto/proto.pb.o $(TEST_LIBS)
+.PHONY: unit 
+unit: proto/proto.pb.o
+	$(CC) $(UNIT_FLAGS) $(FS_FLAGS) -o tests/unit-runner $(UNIT_FILES) $(COMMON) $(SERVER_FILES) $(FS_FILES) proto/proto.pb.o $(TEST_LIBS)
+
+.PHONY: acceptance-run
+acceptance-run: acceptance
+	./tests/acceptance-runner
+
+.PHONY: acceptance
+acceptance: proto/proto.pb.o
+	$(CC) $(ACCEPTANCE_FLAGS) -o tests/acceptance-runner $(ACCEPTANCE_FILES) $(TEST_LIBS)
 
 .PHONY: test-clean
 test-clean:
-	rm -f tests/test-runner
+	rm -f tests/unit-runner
+	rm -f tests/acceptance-runner
