@@ -43,7 +43,8 @@ TEST_CASE("full_read") {
     });
     int len = full_read(fd2, buffer, 10);
     REQUIRE(len == 10);
-    REQUIRE(strcmp(buffer, "1234567890") == 0);
+    // using strncmp instead of strcmp to exclude null terminator from string
+    REQUIRE(strncmp(buffer, "1234567890", 10) == 0);
     close(fd1);
     close(fd2);
     res.wait();
