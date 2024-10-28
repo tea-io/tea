@@ -12,8 +12,7 @@ char *serialize(Header *header) {
     return buf;
 }
 
-Header *deserialize(char *buffer) {
-    Header *header = new Header;
+void *deserialize(char *buffer, Header *header) {
     uint32_t nsize;
     uint32_t nid;
     uint32_t ntype;

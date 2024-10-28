@@ -14,4 +14,4 @@ struct Header {
 
 char *serialize(Header *header);
 
-Header *deserialize(char *buffer);
+void *deserialize(char *buffer, Header *header);

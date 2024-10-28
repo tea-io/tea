@@ -18,7 +18,8 @@ TEST_CASE("Header serialization") {
 
 TEST_CASE("Header deserialization") {
     char buffer[] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03};
-    Header *header = deserialize(buffer);
+    Header *header = new Header();
+    deserialize(buffer, header);
     REQUIRE(header != nullptr);
     REQUIRE(header->size == 1);
     REQUIRE(header->id == 2);
@@ -59,7 +60,8 @@ TEST_CASE("send_message") {
     char *buffer = new char[HEADER_SIZE + static_cast<int>(request.ByteSizeLong())];
     int len = full_read(fd2, buffer, HEADER_SIZE + static_cast<int>(request.ByteSizeLong()));
     REQUIRE(static_cast<int>(len) == HEADER_SIZE + static_cast<int>(request.ByteSizeLong()));
-    Header *header = deserialize(buffer);
+    Header *header = new Header();
+    deserialize(buffer, header);
     REQUIRE(header->size == (int32_t)request.ByteSizeLong());
     REQUIRE(header->id == 1);
     REQUIRE(header->type == INIT_REQUEST);
