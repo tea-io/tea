@@ -29,6 +29,7 @@ int send_message(int sock, int id, Type type, google::protobuf::Message *body) {
     delete[] body_buffer;
 
     int len = send(sock, message_buffer, HEADER_SIZE + body->ByteSizeLong(), 0);
+    delete[] message_buffer;
     if (len < 0) {
         log(DEBUG, sock, "(%d) Send message failed: %s", id, strerror(errno));
         return -1;
@@ -68,7 +69,7 @@ template <typename T> int recv_handler_caller(char *recv_buffer, Header *header,
 
 // Handle recv messages, 1 on success, 0 on EOF, -1 on error
 int handle_recv(int sock, recv_handlers &handlers) {
-    Header *header;
+    Header *header = new Header();
     char buffer[HEADER_SIZE];
     int recived = full_read(sock, buffer, sizeof(buffer));
     if (recived == 0) {
@@ -78,7 +79,7 @@ int handle_recv(int sock, recv_handlers &handlers) {
         log(DEBUG, sock, "Full header read failed");
         return -1;
     }
-    header = deserialize(buffer);
+    deserialize(buffer, header);
     log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header->size, header->id, header->type, recived);
     char *recv_buffer = new char[header->size];
     recived = full_read(sock, recv_buffer, header->size);
