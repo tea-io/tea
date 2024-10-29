@@ -39,10 +39,10 @@ int send_message(int sock, int id, Type type, google::protobuf::Message *body) {
     return len;
 }
 
-int full_read(int fd, char *buf, int size) {
+int full_read(int fd, char &buf, int size) {
     int recived = 0;
     while (recived < size) {
-        int len = recv(fd, buf + recived, size - recived, 0);
+        int len = recv(fd, &buf + recived, size - recived, 0);
         if (len == 0) {
             log(DEBUG, fd, "EOF");
             return 0;
@@ -59,19 +59,16 @@ int full_read(int fd, char *buf, int size) {
 template <typename T> int recv_handler_caller(char *recv_buffer, Header *header, int sock, int (*handler)(int sock, int id, T *response)) {
     T request;
     request.ParseFromArray(recv_buffer, header->size);
-    std::string message = typeid(T).name();
-    message += request.DebugString();
-    message.pop_back();
-    log(DEBUG, sock, message.c_str());
+    std::string type = typeid(T).name();
+    log(DEBUG, sock, "(%d) Recieved: %s\n %s", header->id, type.c_str(), request.DebugString().c_str());
     int ret = handler(sock, header->id, &request);
     return ret;
 }
 
 // Handle recv messages, 1 on success, 0 on EOF, -1 on error
 int handle_recv(int sock, recv_handlers &handlers) {
-    Header *header = new Header();
     char buffer[HEADER_SIZE];
-    int recived = full_read(sock, buffer, sizeof(buffer));
+    int recived = full_read(sock, *buffer, sizeof(buffer));
     if (recived == 0) {
         return 0;
     }
@@ -79,10 +76,11 @@ int handle_recv(int sock, recv_handlers &handlers) {
         log(DEBUG, sock, "Full header read failed");
         return -1;
     }
+    Header *header = new Header();
     deserialize(buffer, header);
     log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header->size, header->id, header->type, recived);
     char *recv_buffer = new char[header->size];
-    recived = full_read(sock, recv_buffer, header->size);
+    recived = full_read(sock, *recv_buffer, header->size);
     if (recived == 0 && header->size != 0) {
         return 0;
     }
@@ -90,7 +88,6 @@ int handle_recv(int sock, recv_handlers &handlers) {
         return -1;
     }
     int ret = -2;
-    std::string message = "";
     switch (header->type) {
     case Type::INIT_REQUEST: {
         ret = recv_handler_caller<InitRequest>(recv_buffer, header, sock, handlers.init_request);
@@ -98,6 +95,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
     }
     case Type::INIT_RESPONSE: {
         ret = recv_handler_caller<InitResponse>(recv_buffer, header, sock, handlers.init_response);
+        break;
+    }
+    case Type::GET_ATTR_REQUEST: {
+        ret = recv_handler_caller<GetAttrRequest>(recv_buffer, header, sock, handlers.get_attr_request);
+        break;
+    }
+    case Type::GET_ATTR_RESPONSE: {
+        ret = recv_handler_caller<GetAttrResponse>(recv_buffer, header, sock, handlers.get_attr_response);
         break;
     }
     default:

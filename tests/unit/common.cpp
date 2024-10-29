@@ -43,7 +43,7 @@ TEST_CASE("full_read") {
         sleep(1);
         send(fd1, "67890", 5, 0);
     });
-    int len = full_read(fd2, buffer, 10);
+    int len = full_read(fd2, *buffer, 10);
     REQUIRE(len == 10);
     REQUIRE(strncmp(buffer, "1234567890", 10) == 0);
     close(fd1);
@@ -58,7 +58,7 @@ TEST_CASE("send_message") {
     int err = send_message(fd1, 1, INIT_REQUEST, &request);
     REQUIRE(err > 0);
     char *buffer = new char[HEADER_SIZE + static_cast<int>(request.ByteSizeLong())];
-    int len = full_read(fd2, buffer, HEADER_SIZE + static_cast<int>(request.ByteSizeLong()));
+    int len = full_read(fd2, *buffer, HEADER_SIZE + static_cast<int>(request.ByteSizeLong()));
     REQUIRE(static_cast<int>(len) == HEADER_SIZE + static_cast<int>(request.ByteSizeLong()));
     Header *header = new Header();
     deserialize(buffer, header);

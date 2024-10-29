@@ -70,9 +70,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install fuse
-      run: sudo apt-get install -y fuse
-
     - name: Prepare environment
       run: mkdir -p project-dir mount-dir
 
@@ -80,13 +77,16 @@ jobs:
       run: nix develop --build
 
     - name: Run server
-      run: nix develop --command bash -c "make server-run" &
+      run: nix develop --command bash -c "sudo make server-run" &
 
     - name: Run filesystem
-      run: nix develop --command bash -c "sudo ./filesystem/filesystem -h=127.0.0.1 mount-dir"
+      run: nix develop --command bash -c "sudo ./filesystem/filesystem -f -h=127.0.0.1 mount-dir" &
 
     - name: Check filesystem is mounted
       run: findmnt mount-dir
 
-    - name: Run acceptance tests
-      run: nix develop --command bash -c "make acceptance-run"
+    - name: Build tests
+      run: nix develop --command bash -c "make acceptance"
+    
+    - name: Run tests
+      run: nix develop --command bash -c "sudo ./tests/acceptance-runner"

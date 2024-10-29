@@ -120,3 +120,5 @@ tests/acceptance-runner
 
 # result symlink that nix build produces
 result
+project-dir
+mount-dir

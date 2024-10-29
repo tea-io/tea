@@ -1,5 +1,6 @@
 #pragma once
 #include "../common/io.h"
+#include "../common/log.h"
 #include <condition_variable>
 #include <mutex>
 #include <string>
@@ -13,13 +14,14 @@ int connect(std::string host, int port);
 
 int recv_thread(int sock);
 
-template <typename T> int request_response(int sock, google::protobuf::Message &request, T *response) {
-    int err = send_message(sock, ++requst_id, Type::INIT_REQUEST, &request);
+template <typename T> int request_response(int sock, google::protobuf::Message &request, T *response, Type type) {
+    int id = ++requst_id;
+    std::unique_lock<std::mutex> lock(mutexes[id]);
+    int err = send_message(sock, id, type, &request);
     if (err < 0) {
         return -1;
     }
-    std::unique_lock<std::mutex> lock(mutexes[requst_id]);
-    conditions[requst_id].wait(lock);
-    response->ParseFromString(messages[requst_id]);
+    conditions[id].wait(lock);
+    response->ParseFromString(messages[id]);
     return 0;
 }
