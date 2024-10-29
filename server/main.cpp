@@ -1,7 +1,9 @@
 #include "../common/log.h"
 #include "fs.h"
 #include "tcp.h"
+#include <filesystem>
 #include <string>
+#include <sys/stat.h>
 
 std::string banner = R"(
  _
@@ -11,9 +13,18 @@ std::string banner = R"(
  \__\___|\__,_| |___/\___|_|    \_/ \___|_|
 )";
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        log(ERROR, "Usage: %s <dir>", argv[0]);
+        return 1;
+    }
+    std::filesystem::path path = argv[1];
+    if (!std::filesystem::exists(path)) {
+        log(ERROR, "Directory %s does not exist", argv[1]);
+        return 1;
+    }
     set_debug_log(true);
     log(NONE, banner.c_str());
-    listen(5210, get_handlers());
+    listen(5210, get_handlers(path));
     return 0;
 };

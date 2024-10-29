@@ -26,7 +26,10 @@ template <typename T> int request_handler(int sock, int id, T message) {
     return 0;
 }
 
-recv_handlers handlers = {.init_request = request_handler<InitRequest *>, .init_response = response_handler<InitResponse *>};
+recv_handlers handlers = {.init_request = request_handler<InitRequest *>,
+                          .init_response = response_handler<InitResponse *>,
+                          .get_attr_request = request_handler<GetAttrRequest *>,
+                          .get_attr_response = response_handler<GetAttrResponse *>};
 
 int connect(std::string host, int port) {
     int sock;
@@ -56,6 +59,7 @@ int recv_thread(int sock) {
         if (err == 0) {
             close(sock);
             log(INFO, sock, "Closing connection");
+            exit(1);
             return 0;
         }
     }
