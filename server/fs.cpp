@@ -80,6 +80,22 @@ static int open_request(int sock, int id, OpenRequest *req) {
     return 0;
 }
 
+static int release_request(int sock, int id, ReleaseRequest *req) {
+    (void)req;
+    ReleaseResponse res;
+    int err = close(fds[req->path()]);
+    if (err < 0) {
+        res.set_error(errno);
+    } else {
+        res.set_error(0);
+    }
+    err = send_message(sock, id, Type::RELEASE_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -96,5 +112,7 @@ recv_handlers get_handlers(std::string path) {
         .get_attr_response = respons_handler<GetAttrResponse *>,
         .open_request = open_request,
         .open_response = respons_handler<OpenResponse *>,
+        .release_request = release_request,
+        .release_response = respons_handler<ReleaseResponse *>,
     };
 }

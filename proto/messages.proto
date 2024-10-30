@@ -7,6 +7,8 @@ enum Type {
   GET_ATTR_RESPONSE = 3;
   OPEN_REQUEST = 4;
   OPEN_RESPONSE = 5;
+  RELEASE_REQUEST = 6;
+  RELEASE_RESPONSE = 7;
 }
 
 message InitRequest { string name = 1; }
@@ -33,3 +35,7 @@ message OpenRequest {
 }
 
 message OpenResponse { int32 error = 1; }
+
+message ReleaseRequest { string path = 1; }
+
+message ReleaseResponse { int32 error = 1; }
