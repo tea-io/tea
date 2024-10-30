@@ -31,7 +31,9 @@ recv_handlers handlers = {.init_request = request_handler<InitRequest *>,
                           .get_attr_request = request_handler<GetAttrRequest *>,
                           .get_attr_response = response_handler<GetAttrResponse *>,
                           .open_request = request_handler<OpenRequest *>,
-                          .open_response = response_handler<OpenResponse *>};
+                          .open_response = response_handler<OpenResponse *>,
+                          .release_request = request_handler<ReleaseRequest *>,
+                          .release_response = response_handler<ReleaseResponse *>};
 
 int connect(std::string host, int port) {
     int sock;
