@@ -74,6 +74,21 @@ static int open_fs(const char *path, struct fuse_file_info *fi) {
     return -res.error();
 };
 
+static int release_fs(const char *path, struct fuse_file_info *fi) {
+    (void)fi;
+    ReleaseRequest req = ReleaseRequest();
+    req.set_path(path);
+    ReleaseResponse res;
+    int err = request_response<ReleaseResponse>(sock, req, &res, RELEASE_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to release file: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -82,6 +97,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
     fuse_operations ops = {
         .getattr = get_attr_request,
         .open = open_fs,
+        .release = release_fs,
         .init = init,
         .destroy = destroy,
     };
