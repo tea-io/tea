@@ -89,6 +89,26 @@ static int release_fs(const char *path, struct fuse_file_info *fi) {
     return -res.error();
 };
 
+static int readdir_fs(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags) {
+    (void)fi;
+    (void)flags;
+    (void)offset;
+    ReadDirRequest req = ReadDirRequest();
+    req.set_path(path);
+    ReadDirResponse res;
+    int err = request_response<ReadDirResponse>(sock, req, &res, READ_DIR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to read directory: %d", res.error());
+    }
+    for (int i = 0; i < res.names_size(); i++) {
+        filler(buf, res.names(i).c_str(), NULL, 0, FUSE_FILL_DIR_PLUS);
+    }
+    return 0;
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -98,6 +118,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .getattr = get_attr_request,
         .open = open_fs,
         .release = release_fs,
+        .readdir = readdir_fs,
         .init = init,
         .destroy = destroy,
     };
