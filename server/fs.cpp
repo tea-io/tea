@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <dirent.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <list>
@@ -96,6 +97,36 @@ static int release_request(int sock, int id, ReleaseRequest *req) {
     return 0;
 }
 
+static int read_dir_request(int sock, int id, ReadDirRequest *req) {
+    ReadDirResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        DIR *dir = opendir(path.c_str());
+        if (dir == nullptr) {
+            res.set_error(errno);
+        } else {
+            struct dirent *entry;
+            errno = 0;
+            while ((entry = readdir(dir)) != nullptr) {
+                res.add_names(entry->d_name);
+            }
+            if (errno != 0) {
+                res.set_error(errno);
+            } else {
+                res.set_error(0);
+            }
+            closedir(dir);
+        }
+    }
+    int err = send_message(sock, id, Type::READ_DIR_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -114,5 +145,7 @@ recv_handlers get_handlers(std::string path) {
         .open_response = respons_handler<OpenResponse *>,
         .release_request = release_request,
         .release_response = respons_handler<ReleaseResponse *>,
+        .read_dir_request = read_dir_request,
+        .read_dir_response = respons_handler<ReadDirResponse *>,
     };
 }
