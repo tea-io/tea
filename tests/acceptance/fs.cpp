@@ -1,8 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
+#include <dirent.h>
 #include <fcntl.h>
+#include <list>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <algorithm>
 
 TEST_CASE("stat") {
     SECTION("file") {
@@ -56,4 +59,28 @@ TEST_CASE("open and close") {
     int err = close(fd);
     REQUIRE(err == 0);
     remove("project-dir/test.txt");
+}
+
+TEST_CASE("readdir") {
+    mkdir("project-dir/test-dir", 0755);
+    int fd = open("project-dir/test.txt", O_RDWR | O_CREAT, 0644);
+    close(fd);
+    // check readdir
+    DIR *dir = opendir("mount-dir");
+    REQUIRE(dir != nullptr);
+    struct dirent *entry = readdir(dir);
+    REQUIRE(entry != nullptr);
+    std::list<std::string> entries;
+    while (entry != nullptr) {
+        entries.push_back(entry->d_name);
+        entry = readdir(dir);
+    }
+    REQUIRE(entry == nullptr);
+    REQUIRE(entries.size() == 4);
+    REQUIRE(std::find(entries.begin(), entries.end(), "test.txt") != entries.end());
+    REQUIRE(std::find(entries.begin(), entries.end(), "test-dir") != entries.end());
+    REQUIRE(std::find(entries.begin(), entries.end(), ".") != entries.end());
+    REQUIRE(std::find(entries.begin(), entries.end(), "..") != entries.end());
+    remove("project-dir/test.txt");
+    remove("project-dir/test-dir");
 }

@@ -9,6 +9,8 @@ enum Type {
   OPEN_RESPONSE = 5;
   RELEASE_REQUEST = 6;
   RELEASE_RESPONSE = 7;
+  READ_DIR_REQUEST = 8;
+  READ_DIR_RESPONSE = 9;
 }
 
 message InitRequest { string name = 1; }
@@ -39,3 +41,10 @@ message OpenResponse { int32 error = 1; }
 message ReleaseRequest { string path = 1; }
 
 message ReleaseResponse { int32 error = 1; }
+
+message ReadDirRequest { string path = 1; }
+
+message ReadDirResponse {
+  int32 error = 1;
+  repeated string names = 2;
+}

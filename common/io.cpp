@@ -121,6 +121,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<ReleaseResponse>(recv_buffer, header, sock, handlers.release_response);
         break;
     }
+    case Type::READ_DIR_REQUEST: {
+        ret = recv_handler_caller<ReadDirRequest>(recv_buffer, header, sock, handlers.read_dir_request);
+        break;
+    }
+    case Type::READ_DIR_RESPONSE: {
+        ret = recv_handler_caller<ReadDirResponse>(recv_buffer, header, sock, handlers.read_dir_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
