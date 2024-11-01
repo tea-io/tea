@@ -101,3 +101,23 @@ TEST_CASE("read") {
     close(fd);
     remove("project-dir/read.txt");
 }
+
+TEST_CASE("write") {
+    int fd = open("project-dir/write.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    fd = open("mount-dir/write.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    char buffer[10] = "123456789";
+    int err = write(fd, buffer, 10);
+    REQUIRE(err == 10);
+    close(fd);
+    fd = open("project-dir/write.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    char read_buffer[10];
+    err = read(fd, read_buffer, 10);
+    REQUIRE(strncmp(read_buffer, buffer, 10) == 0);
+    REQUIRE(err == 10);
+    close(fd);
+    remove("project-dir/write.txt");
+}

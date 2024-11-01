@@ -149,6 +149,27 @@ static int read_request(int sock, int id, ReadRequest *req) {
     return 0;
 }
 
+static int write_request(int sock, int id, WriteRequest *req) {
+    WriteResponse res;
+    int fd = fds[req->path()];
+    if (fd < 0) {
+        res.set_error(EBADF);
+    }
+    int n = write(fd, req->data().c_str(), req->data().size());
+    log(ERROR, sock, "Write %d bytes", n);
+    if (n < 0) {
+        res.set_error(errno);
+    } else {
+        res.set_error(0);
+        res.set_size(n);
+    }
+    int err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -171,5 +192,7 @@ recv_handlers get_handlers(std::string path) {
         .read_dir_response = respons_handler<ReadDirResponse *>,
         .read_request = read_request,
         .read_response = respons_handler<ReadResponse *>,
+        .write_request = write_request,
+        .write_response = respons_handler<WriteResponse *>,
     };
 }
