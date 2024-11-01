@@ -130,6 +130,29 @@ static int read_fs(const char *path, char *buf, size_t size, off_t offset, struc
     return res.data().size();
 };
 
+static int write_fs(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    (void)fi;
+    WriteRequest req = WriteRequest();
+    req.set_path(path);
+    req.set_offset(offset);
+    req.set_data(buf, size);
+    WriteResponse res;
+    int err = request_response<WriteResponse>(sock, req, &res, WRITE_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to write file: %d", res.error());
+    }
+    if (res.error() != 0) {
+        return -res.error();
+    }
+    if (static_cast<long unsigned int>(res.size()) != size) {
+        return -1;
+    }
+    return res.size();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -139,6 +162,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .getattr = get_attr_request,
         .open = open_fs,
         .read = read_fs,
+        .write = write_fs,
         .release = release_fs,
         .readdir = readdir_fs,
         .init = init,
