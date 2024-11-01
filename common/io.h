@@ -23,6 +23,8 @@ struct recv_handlers {
     int (*read_response)(int sock, int id, ReadResponse *response);
     int (*write_request)(int sock, int id, WriteRequest *request);
     int (*write_response)(int sock, int id, WriteResponse *response);
+    int (*create_request)(int sock, int id, CreateRequest *request);
+    int (*create_response)(int sock, int id, CreateResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
