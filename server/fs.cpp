@@ -191,6 +191,26 @@ static int create_request(int sock, int id, CreateRequest *req) {
     return 0;
 }
 
+static int mkdir_request(int sock, int id, MkdirRequest *req) {
+    MkdirResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        int err = mkdir(path.c_str(), req->mode());
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::MKDIR_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -217,5 +237,7 @@ recv_handlers get_handlers(std::string path) {
         .write_response = respons_handler<WriteResponse *>,
         .create_request = create_request,
         .create_response = respons_handler<CreateResponse *>,
+        .mkdir_request = mkdir_request,
+        .mkdir_response = respons_handler<MkdirResponse *>,
     };
 }

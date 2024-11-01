@@ -153,6 +153,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<CreateResponse>(recv_buffer, header, sock, handlers.create_response);
         break;
     }
+    case Type::MKDIR_REQUEST: {
+        ret = recv_handler_caller<MkdirRequest>(recv_buffer, header, sock, handlers.mkdir_request);
+        break;
+    }
+    case Type::MKDIR_RESPONSE: {
+        ret = recv_handler_caller<MkdirResponse>(recv_buffer, header, sock, handlers.mkdir_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
