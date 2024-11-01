@@ -19,6 +19,8 @@ struct recv_handlers {
     int (*release_response)(int sock, int id, ReleaseResponse *response);
     int (*read_dir_request)(int sock, int id, ReadDirRequest *request);
     int (*read_dir_response)(int sock, int id, ReadDirResponse *response);
+    int (*read_request)(int sock, int id, ReadRequest *request);
+    int (*read_response)(int sock, int id, ReadResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
