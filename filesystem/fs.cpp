@@ -169,6 +169,21 @@ static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
     return -res.error();
 };
 
+static int mkdir_fs(const char *path, mode_t mode) {
+    MkdirRequest req = MkdirRequest();
+    req.set_path(path);
+    req.set_mode(mode | S_IFDIR);
+    MkdirResponse res;
+    int err = request_response<MkdirResponse>(sock, req, &res, MKDIR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to create directory: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -176,6 +191,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
     cfg = cfg_param;
     fuse_operations ops = {
         .getattr = get_attr_request,
+        .mkdir = mkdir_fs,
         .open = open_fs,
         .read = read_fs,
         .write = write_fs,

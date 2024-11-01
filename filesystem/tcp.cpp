@@ -41,7 +41,9 @@ recv_handlers handlers = {.init_request = request_handler<InitRequest *>,
                           .write_request = request_handler<WriteRequest *>,
                           .write_response = response_handler<WriteResponse *>,
                           .create_request = request_handler<CreateRequest *>,
-                          .create_response = response_handler<CreateResponse *>};
+                          .create_response = response_handler<CreateResponse *>,
+                          .mkdir_request = request_handler<MkdirRequest *>,
+                          .mkdir_response = response_handler<MkdirResponse *>};
 
 int connect(std::string host, int port) {
     int sock;
