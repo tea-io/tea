@@ -137,6 +137,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<ReadResponse>(recv_buffer, header, sock, handlers.read_response);
         break;
     }
+    case Type::WRITE_REQUEST: {
+        ret = recv_handler_caller<WriteRequest>(recv_buffer, header, sock, handlers.write_request);
+        break;
+    }
+    case Type::WRITE_RESPONSE: {
+        ret = recv_handler_caller<WriteResponse>(recv_buffer, header, sock, handlers.write_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

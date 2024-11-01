@@ -13,6 +13,8 @@ enum Type {
   READ_DIR_RESPONSE = 9;
   READ_REQUEST = 10;
   READ_RESPONSE = 11;
+  WRITE_REQUEST = 12;
+  WRITE_RESPONSE = 13;
 }
 
 message InitRequest { string name = 1; }
@@ -60,4 +62,15 @@ message ReadRequest {
 message ReadResponse {
   int32 error = 1;
   bytes data = 2;
+}
+
+message WriteRequest {
+  string path = 1;
+  int64 offset = 2;
+  bytes data = 3;
+}
+
+message WriteResponse {
+  int32 error = 1;
+  int32 size = 2;
 }
