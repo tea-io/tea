@@ -121,3 +121,12 @@ TEST_CASE("write") {
     close(fd);
     remove("project-dir/write.txt");
 }
+
+TEST_CASE("create") {
+    int fd = creat("mount-dir/create.txt", 0644);
+    REQUIRE(fd >= 0);
+    fd = open("project-dir/create.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    remove("project-dir/create.txt");
+}
