@@ -17,6 +17,8 @@ enum Type {
   WRITE_RESPONSE = 13;
   CREATE_REQUEST = 14;
   CREATE_RESPONSE = 15;
+  MKDIR_REQUEST = 16;
+  MKDIR_RESPONSE = 17;
 }
 
 message InitRequest { string name = 1; }
@@ -83,3 +85,10 @@ message CreateRequest {
 }
 
 message CreateResponse { int32 error = 1; }
+
+message MkdirRequest {
+  string path = 1;
+  int32 mode = 2;
+}
+
+message MkdirResponse { int32 error = 1; }

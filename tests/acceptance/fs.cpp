@@ -130,3 +130,13 @@ TEST_CASE("create") {
     close(fd);
     remove("project-dir/create.txt");
 }
+
+TEST_CASE("mkdir") {
+    int err = mkdir("mount-dir/mkdir", 0755);
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = stat("project-dir/mkdir", &new_stat);
+    REQUIRE(err == 0);
+    REQUIRE(S_ISDIR(new_stat.st_mode));
+    remove("project-dir/mkdir");
+}
