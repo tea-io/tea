@@ -1,4 +1,5 @@
 #include "fs.h"
+#include "../common/log.h"
 #include "../proto/messages.pb.h"
 #include <cerrno>
 #include <cstdio>
@@ -127,6 +128,27 @@ static int read_dir_request(int sock, int id, ReadDirRequest *req) {
     return 0;
 }
 
+static int read_request(int sock, int id, ReadRequest *req) {
+    ReadResponse res;
+    int fd = fds[req->path()];
+    if (fd < 0) {
+        res.set_error(EBADF);
+    }
+    char *buf = new char[req->size()];
+    int n = read(fd, buf, req->size());
+    if (n < 0) {
+        res.set_error(errno);
+    } else {
+        res.set_error(0);
+        res.set_data(buf, n);
+    }
+    int err = send_message(sock, id, Type::READ_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -147,5 +169,7 @@ recv_handlers get_handlers(std::string path) {
         .release_response = respons_handler<ReleaseResponse *>,
         .read_dir_request = read_dir_request,
         .read_dir_response = respons_handler<ReadDirResponse *>,
+        .read_request = read_request,
+        .read_response = respons_handler<ReadResponse *>,
     };
 }

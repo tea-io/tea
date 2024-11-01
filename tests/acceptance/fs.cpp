@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
 #include <dirent.h>
@@ -5,7 +6,6 @@
 #include <list>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <algorithm>
 
 TEST_CASE("stat") {
     SECTION("file") {
@@ -83,4 +83,21 @@ TEST_CASE("readdir") {
     REQUIRE(std::find(entries.begin(), entries.end(), "..") != entries.end());
     remove("project-dir/test.txt");
     remove("project-dir/test-dir");
+}
+
+TEST_CASE("read") {
+    int fd = open("project-dir/read.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    char buffer[10] = "123456789";
+    int err = write(fd, buffer, 10);
+    REQUIRE(err == 10);
+    close(fd);
+    fd = open("mount-dir/read.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    char read_buffer[10];
+    err = read(fd, read_buffer, 10);
+    REQUIRE(strncmp(read_buffer, buffer, 10) == 0);
+    REQUIRE(err == 10);
+    close(fd);
+    remove("project-dir/read.txt");
 }

@@ -11,6 +11,8 @@ enum Type {
   RELEASE_RESPONSE = 7;
   READ_DIR_REQUEST = 8;
   READ_DIR_RESPONSE = 9;
+  READ_REQUEST = 10;
+  READ_RESPONSE = 11;
 }
 
 message InitRequest { string name = 1; }
@@ -47,4 +49,15 @@ message ReadDirRequest { string path = 1; }
 message ReadDirResponse {
   int32 error = 1;
   repeated string names = 2;
+}
+
+message ReadRequest {
+  string path = 1;
+  int64 offset = 2;
+  int32 size = 3;
+}
+
+message ReadResponse {
+  int32 error = 1;
+  bytes data = 2;
 }
