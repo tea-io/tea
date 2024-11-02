@@ -201,6 +201,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<TruncateResponse>(recv_buffer, header, sock, handlers.truncate_response);
         break;
     }
+    case Type::MKNOD_REQUEST: {
+        ret = recv_handler_caller<MknodRequest>(recv_buffer, header, sock, handlers.mknod_request);
+        break;
+    }
+    case Type::MKNOD_RESPONSE: {
+        ret = recv_handler_caller<MknodResponse>(recv_buffer, header, sock, handlers.mknod_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
