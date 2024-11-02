@@ -31,6 +31,8 @@ struct recv_handlers {
     int (*unlink_response)(int sock, int id, UnlinkResponse *response);
     int (*rmdir_request)(int sock, int id, RmdirRequest *request);
     int (*rmdir_response)(int sock, int id, RmdirResponse *response);
+    int (*rename_request)(int sock, int id, RenameRequest *request);
+    int (*rename_response)(int sock, int id, RenameResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

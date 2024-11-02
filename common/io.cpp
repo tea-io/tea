@@ -177,6 +177,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<RmdirResponse>(recv_buffer, header, sock, handlers.rmdir_response);
         break;
     }
+    case Type::RENAME_REQUEST: {
+        ret = recv_handler_caller<RenameRequest>(recv_buffer, header, sock, handlers.rename_request);
+        break;
+    }
+    case Type::RENAME_RESPONSE: {
+        ret = recv_handler_caller<RenameResponse>(recv_buffer, header, sock, handlers.rename_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
