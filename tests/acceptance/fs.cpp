@@ -152,3 +152,14 @@ TEST_CASE("unlink") {
     REQUIRE(err == -1);
     REQUIRE(errno == ENOENT); 
 }
+
+TEST_CASE("rmdir") {
+    int err = mkdir("project-dir/rmdir", 0755);
+    REQUIRE(err == 0);
+    err = rmdir("mount-dir/rmdir");
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = stat("project-dir/rmdir", &new_stat);
+    REQUIRE(err == -1);
+    REQUIRE(errno == ENOENT);
+}

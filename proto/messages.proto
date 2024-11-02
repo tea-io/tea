@@ -21,6 +21,8 @@ enum Type {
   MKDIR_RESPONSE = 17;
   UNLINK_REQUEST = 18;
   UNLINK_RESPONSE = 19;
+  RMDIR_REQUEST = 20;
+  RMDIR_RESPONSE = 21;
 }
 
 message InitRequest { string name = 1; }
@@ -98,3 +100,7 @@ message MkdirResponse { int32 error = 1; }
 message UnlinkRequest { string path = 1; }
 
 message UnlinkResponse { int32 error = 1; }
+
+message RmdirRequest { string path = 1; }
+
+message RmdirResponse { int32 error = 1; }
