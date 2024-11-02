@@ -37,6 +37,8 @@ struct recv_handlers {
     int (*chmod_response)(int sock, int id, ChmodResponse *response);
     int (*truncate_request)(int sock, int id, TruncateRequest *request);
     int (*truncate_response)(int sock, int id, TruncateResponse *response);
+    int (*mknod_request)(int sock, int id, MknodRequest *request);
+    int (*mknod_response)(int sock, int id, MknodResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

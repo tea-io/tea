@@ -242,3 +242,13 @@ TEST_CASE("truncate") {
     close(fd);
     remove("project-dir/truncate.txt");
 }
+
+TEST_CASE("mknod") {
+    int err = mknod("mount-dir/mknod.pipe", S_IFIFO | 0644, 0);
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = stat("project-dir/mknod.pipe", &new_stat);
+    REQUIRE(err == 0);
+    REQUIRE(S_ISFIFO(new_stat.st_mode));
+    remove("project-dir/mknod.pipe");
+}

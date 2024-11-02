@@ -29,6 +29,8 @@ enum Type {
   CHMOD_RESPONSE = 25;
   TRUNCATE_REQUEST = 26;
   TRUNCATE_RESPONSE = 27;
+  MKNOD_REQUEST = 28;
+  MKNOD_RESPONSE = 29;
 }
 
 message InitRequest { string name = 1; }
@@ -132,3 +134,11 @@ message TruncateRequest {
 }
 
 message TruncateResponse { int32 error = 1; }
+
+message MknodRequest {
+  string path = 1;
+  int32 mode = 2;
+  int32 dev = 3;
+}
+
+message MknodResponse { int32 error = 1; }
