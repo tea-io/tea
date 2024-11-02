@@ -27,6 +27,8 @@ enum Type {
   RENAME_RESPONSE = 23;
   CHMOD_REQUEST = 24;
   CHMOD_RESPONSE = 25;
+  TRUNCATE_REQUEST = 26;
+  TRUNCATE_RESPONSE = 27;
 }
 
 message InitRequest { string name = 1; }
@@ -123,3 +125,10 @@ message ChmodRequest {
 }
 
 message ChmodResponse { int32 error = 1; }
+
+message TruncateRequest {
+  string path = 1;
+  int64 size = 2;
+}
+
+message TruncateResponse { int32 error = 1; }

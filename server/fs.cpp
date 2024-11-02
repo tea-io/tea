@@ -331,6 +331,26 @@ static int chmod_request(int sock, int id, ChmodRequest *req) {
     return 0;
 }
 
+static int truncate_request(int sock, int id, TruncateRequest *req) {
+    TruncateResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        int err = truncate(path.c_str(), req->size());
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::TRUNCATE_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -367,5 +387,7 @@ recv_handlers get_handlers(std::string path) {
         .rename_response = respons_handler<RenameResponse *>,
         .chmod_request = chmod_request,
         .chmod_response = respons_handler<ChmodResponse *>,
+        .truncate_request = truncate_request,
+        .truncate_response = respons_handler<TruncateResponse *>,
     };
 }
