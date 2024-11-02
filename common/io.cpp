@@ -193,6 +193,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<ChmodResponse>(recv_buffer, header, sock, handlers.chmod_response);
         break;
     }
+    case Type::TRUNCATE_REQUEST: {
+        ret = recv_handler_caller<TruncateRequest>(recv_buffer, header, sock, handlers.truncate_request);
+        break;
+    }
+    case Type::TRUNCATE_RESPONSE: {
+        ret = recv_handler_caller<TruncateResponse>(recv_buffer, header, sock, handlers.truncate_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

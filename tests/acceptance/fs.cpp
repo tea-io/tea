@@ -224,3 +224,21 @@ TEST_CASE("chmod") {
     REQUIRE(new_stat.st_mode == 0100755);
     remove("project-dir/chmod.txt");
 }
+
+TEST_CASE("truncate") {
+    int fd = open("project-dir/truncate.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    int err = write(fd, "123456789", 9);
+    REQUIRE(err == 9);
+    close(fd);
+    err = truncate("mount-dir/truncate.txt", 5);
+    REQUIRE(err == 0);
+    fd = open("project-dir/truncate.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    char buffer[10];
+    err = read(fd, buffer, 10);
+    REQUIRE(err == 5);
+    REQUIRE(strncmp(buffer, "12345", 5) == 0);
+    close(fd);
+    remove("project-dir/truncate.txt");
+}
