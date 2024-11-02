@@ -10,6 +10,7 @@
 #include <list>
 #include <string>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 
 struct client_info {
     int fd;
@@ -251,6 +252,65 @@ static int rmdir_request(int sock, int id, RmdirRequest *req) {
     return 0;
 }
 
+static int rename_normal(std::string old_path, std::string new_path) {
+    int err = rename(old_path.c_str(), new_path.c_str());
+    if (err < 0) {
+        return errno;
+    }
+    return 0;
+}
+
+static int rename_no_replace(std::string old_path, std::string new_path) {
+    if (std::filesystem::exists(new_path)) {
+        return EEXIST;
+    }
+    int err = rename(old_path.c_str(), new_path.c_str());
+    if (err < 0) {
+        return errno;
+    }
+    return 0;
+}
+
+static int rename_exchange(std::string old_path, std::string new_path) {
+    if (!std::filesystem::exists(new_path) || !std::filesystem::exists(old_path)) {
+        return ENOENT;
+    }
+    int err = syscall(SYS_renameat2, AT_FDCWD, old_path.c_str(), AT_FDCWD, new_path.c_str(), RENAME_EXCHANGE);
+    if (err < 0) {
+        return errno;
+    }
+    return 0;
+}
+
+static int rename_request(int sock, int id, RenameRequest *req) {
+    RenameResponse res;
+    std::string new_path = std::filesystem::weakly_canonical(base_path + req->new_path());
+    if (new_path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    }
+    std::string old_path = std::filesystem::weakly_canonical(base_path + req->old_path());
+    if (old_path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    }
+    if (res.error() == 0) {
+        int flags = req->flags();
+        int err = EINVAL;
+        if (flags == 0) {
+            err = rename_normal(old_path, new_path);
+        } else if (flags == RENAME_NOREPLACE) {
+            err = rename_no_replace(old_path, new_path);
+        } else if (flags == RENAME_EXCHANGE) {
+            err = rename_exchange(old_path, new_path);
+        }
+        res.set_error(err);
+    }
+    int err = send_message(sock, id, Type::RENAME_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -283,5 +343,7 @@ recv_handlers get_handlers(std::string path) {
         .unlink_response = respons_handler<UnlinkResponse *>,
         .rmdir_request = rmdir_request,
         .rmdir_response = respons_handler<RmdirResponse *>,
+        .rename_request = rename_request,
+        .rename_response = respons_handler<RenameResponse *>,
     };
 }

@@ -23,6 +23,8 @@ enum Type {
   UNLINK_RESPONSE = 19;
   RMDIR_REQUEST = 20;
   RMDIR_RESPONSE = 21;
+  RENAME_REQUEST = 22;
+  RENAME_RESPONSE = 23;
 }
 
 message InitRequest { string name = 1; }
@@ -104,3 +106,11 @@ message UnlinkResponse { int32 error = 1; }
 message RmdirRequest { string path = 1; }
 
 message RmdirResponse { int32 error = 1; }
+
+message RenameRequest {
+  string old_path = 1;
+  string new_path = 2;
+  int32 flags = 3;
+}
+
+message RenameResponse { int32 error = 1; }

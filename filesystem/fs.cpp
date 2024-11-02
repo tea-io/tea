@@ -212,6 +212,22 @@ static int rmdir_fs(const char *path) {
     return -res.error();
 }
 
+static int rename_fs(const char *old_path, const char *new_path, unsigned int flags) {
+    RenameRequest req = RenameRequest();
+    req.set_old_path(old_path);
+    req.set_new_path(new_path);
+    req.set_flags(flags);
+    RenameResponse res;
+    int err = request_response<RenameResponse>(sock, req, &res, RENAME_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to rename: %d", res.error());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -222,6 +238,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .mkdir = mkdir_fs,
         .unlink = unlink_fs,
         .rmdir = rmdir_fs,
+        .rename = rename_fs,
         .open = open_fs,
         .read = read_fs,
         .write = write_fs,
