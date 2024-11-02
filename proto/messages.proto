@@ -25,6 +25,8 @@ enum Type {
   RMDIR_RESPONSE = 21;
   RENAME_REQUEST = 22;
   RENAME_RESPONSE = 23;
+  CHMOD_REQUEST = 24;
+  CHMOD_RESPONSE = 25;
 }
 
 message InitRequest { string name = 1; }
@@ -114,3 +116,10 @@ message RenameRequest {
 }
 
 message RenameResponse { int32 error = 1; }
+
+message ChmodRequest {
+  string path = 1;
+  int32 mode = 2;
+}
+
+message ChmodResponse { int32 error = 1; }

@@ -51,6 +51,8 @@ recv_handlers handlers = {
     .rmdir_response = response_handler<RmdirResponse *>,
     .rename_request = request_handler<RenameRequest *>,
     .rename_response = response_handler<RenameResponse *>,
+    .chmod_request = request_handler<ChmodRequest *>,
+    .chmod_response = response_handler<ChmodResponse *>,
 };
 
 int connect(std::string host, int port) {
