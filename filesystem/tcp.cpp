@@ -57,6 +57,8 @@ recv_handlers handlers = {
     .truncate_response = response_handler<TruncateResponse *>,
     .mknod_request = request_handler<MknodRequest *>,
     .mknod_response = response_handler<MknodResponse *>,
+    .link_request = request_handler<LinkRequest *>,
+    .link_response = response_handler<LinkResponse *>,
 };
 
 int connect(std::string host, int port) {

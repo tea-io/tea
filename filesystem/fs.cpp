@@ -286,6 +286,21 @@ static int mknod_fs(const char *path, mode_t mode, dev_t dev) {
     return -res.error();
 }
 
+static int link_fs(const char *old_path, const char *new_path) {
+    LinkRequest req = LinkRequest();
+    req.set_old_path(old_path);
+    req.set_new_path(new_path);
+    LinkResponse res;
+    int err = request_response<LinkResponse>(sock, req, &res, LINK_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to link: %d", res.error());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -298,6 +313,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .unlink = unlink_fs,
         .rmdir = rmdir_fs,
         .rename = rename_fs,
+        .link = link_fs,
         .chmod = chmod,
         .chown = chown,
         .truncate = truncate_fs,

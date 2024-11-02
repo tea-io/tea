@@ -209,7 +209,15 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<MknodResponse>(recv_buffer, header, sock, handlers.mknod_response);
         break;
     }
-    default:
+    case Type::LINK_REQUEST: {
+        ret = recv_handler_caller<LinkRequest>(recv_buffer, header, sock, handlers.link_request);
+        break;
+    }
+    case Type::LINK_RESPONSE: {
+        ret = recv_handler_caller<LinkResponse>(recv_buffer, header, sock, handlers.link_response);
+        break;
+    }
+
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
     }

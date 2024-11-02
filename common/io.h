@@ -39,6 +39,8 @@ struct recv_handlers {
     int (*truncate_response)(int sock, int id, TruncateResponse *response);
     int (*mknod_request)(int sock, int id, MknodRequest *request);
     int (*mknod_response)(int sock, int id, MknodResponse *response);
+    int (*link_request)(int sock, int id, LinkRequest *request);
+    int (*link_response)(int sock, int id, LinkResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

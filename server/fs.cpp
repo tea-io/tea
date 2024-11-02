@@ -371,6 +371,27 @@ static int mknod_request(int sock, int id, MknodRequest *req) {
     return 0;
 }
 
+static int link_request(int sock, int id, LinkRequest *req) {
+    LinkResponse res;
+    std::string old_path = std::filesystem::weakly_canonical(base_path + req->old_path());
+    std::string new_path = std::filesystem::weakly_canonical(base_path + req->new_path());
+    if (old_path.substr(0, base_path.size()) != base_path || new_path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        int err = link(old_path.c_str(), new_path.c_str());
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::LINK_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -411,5 +432,7 @@ recv_handlers get_handlers(std::string path) {
         .truncate_response = respons_handler<TruncateResponse *>,
         .mknod_request = mknod_request,
         .mknod_response = respons_handler<MknodResponse *>,
+        .link_request = link_request,
+        .link_response = respons_handler<LinkResponse *>,
     };
 }
