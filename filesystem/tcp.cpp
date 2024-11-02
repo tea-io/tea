@@ -26,26 +26,30 @@ template <typename T> int request_handler(int sock, int id, T message) {
     return 0;
 }
 
-recv_handlers handlers = {.init_request = request_handler<InitRequest *>,
-                          .init_response = response_handler<InitResponse *>,
-                          .get_attr_request = request_handler<GetAttrRequest *>,
-                          .get_attr_response = response_handler<GetAttrResponse *>,
-                          .open_request = request_handler<OpenRequest *>,
-                          .open_response = response_handler<OpenResponse *>,
-                          .release_request = request_handler<ReleaseRequest *>,
-                          .release_response = response_handler<ReleaseResponse *>,
-                          .read_dir_request = request_handler<ReadDirRequest *>,
-                          .read_dir_response = response_handler<ReadDirResponse *>,
-                          .read_request = request_handler<ReadRequest *>,
-                          .read_response = response_handler<ReadResponse *>,
-                          .write_request = request_handler<WriteRequest *>,
-                          .write_response = response_handler<WriteResponse *>,
-                          .create_request = request_handler<CreateRequest *>,
-                          .create_response = response_handler<CreateResponse *>,
-                          .mkdir_request = request_handler<MkdirRequest *>,
-                          .mkdir_response = response_handler<MkdirResponse *>,
-                          .unlink_request = request_handler<UnlinkRequest *>,
-                          .unlink_response = response_handler<UnlinkResponse *>};
+recv_handlers handlers = {
+    .init_request = request_handler<InitRequest *>,
+    .init_response = response_handler<InitResponse *>,
+    .get_attr_request = request_handler<GetAttrRequest *>,
+    .get_attr_response = response_handler<GetAttrResponse *>,
+    .open_request = request_handler<OpenRequest *>,
+    .open_response = response_handler<OpenResponse *>,
+    .release_request = request_handler<ReleaseRequest *>,
+    .release_response = response_handler<ReleaseResponse *>,
+    .read_dir_request = request_handler<ReadDirRequest *>,
+    .read_dir_response = response_handler<ReadDirResponse *>,
+    .read_request = request_handler<ReadRequest *>,
+    .read_response = response_handler<ReadResponse *>,
+    .write_request = request_handler<WriteRequest *>,
+    .write_response = response_handler<WriteResponse *>,
+    .create_request = request_handler<CreateRequest *>,
+    .create_response = response_handler<CreateResponse *>,
+    .mkdir_request = request_handler<MkdirRequest *>,
+    .mkdir_response = response_handler<MkdirResponse *>,
+    .unlink_request = request_handler<UnlinkRequest *>,
+    .unlink_response = response_handler<UnlinkResponse *>,
+    .rmdir_request = request_handler<RmdirRequest *>,
+    .rmdir_response = response_handler<RmdirResponse *>,
+};
 
 int connect(std::string host, int port) {
     int sock;
