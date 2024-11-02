@@ -254,6 +254,22 @@ static int chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
     return -res.error();
 }
 
+static int truncate_fs(const char *path, off_t size, struct fuse_file_info *fi) {
+    (void)fi;
+    TruncateRequest req = TruncateRequest();
+    req.set_path(path);
+    req.set_size(size);
+    TruncateResponse res;
+    int err = request_response<TruncateResponse>(sock, req, &res, TRUNCATE_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to truncate: %d", res.error());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -267,6 +283,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .rename = rename_fs,
         .chmod = chmod,
         .chown = chown,
+        .truncate = truncate_fs,
         .open = open_fs,
         .read = read_fs,
         .write = write_fs,
