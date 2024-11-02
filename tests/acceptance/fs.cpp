@@ -140,3 +140,15 @@ TEST_CASE("mkdir") {
     REQUIRE(S_ISDIR(new_stat.st_mode));
     remove("project-dir/mkdir");
 }
+
+TEST_CASE("unlink") {
+    int fd = open("project-dir/unlink.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    int err = unlink("mount-dir/unlink.txt");
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = stat("project-dir/unlink.txt", &new_stat);
+    REQUIRE(err == -1);
+    REQUIRE(errno == ENOENT); 
+}

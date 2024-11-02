@@ -184,6 +184,20 @@ static int mkdir_fs(const char *path, mode_t mode) {
     return -res.error();
 };
 
+static int unlink_fs(const char *path) {
+    UnlinkRequest req = UnlinkRequest();
+    req.set_path(path);
+    UnlinkResponse res;
+    int err = request_response<UnlinkResponse>(sock, req, &res, UNLINK_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to unlink: %d", res.error());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -192,6 +206,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
     fuse_operations ops = {
         .getattr = get_attr_request,
         .mkdir = mkdir_fs,
+        .unlink = unlink_fs,
         .open = open_fs,
         .read = read_fs,
         .write = write_fs,
