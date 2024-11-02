@@ -270,6 +270,22 @@ static int truncate_fs(const char *path, off_t size, struct fuse_file_info *fi) 
     return -res.error();
 }
 
+static int mknod_fs(const char *path, mode_t mode, dev_t dev) {
+    MknodRequest req = MknodRequest();
+    req.set_path(path);
+    req.set_mode(mode);
+    req.set_dev(dev);
+    MknodResponse res;
+    int err = request_response<MknodResponse>(sock, req, &res, MKNOD_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to create node: %d", res.error());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -277,6 +293,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
     cfg = cfg_param;
     fuse_operations ops = {
         .getattr = get_attr_request,
+        .mknod = mknod_fs,
         .mkdir = mkdir_fs,
         .unlink = unlink_fs,
         .rmdir = rmdir_fs,
