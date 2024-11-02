@@ -211,3 +211,16 @@ TEST_CASE("rename") {
         remove("project-dir/exchange2.txt");
     }
 }
+
+TEST_CASE("chmod") {
+    int fd = open("project-dir/chmod.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    int err = chmod("mount-dir/chmod.txt", 0755);
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = stat("project-dir/chmod.txt", &new_stat);
+    REQUIRE(err == 0);
+    REQUIRE(new_stat.st_mode == 0100755);
+    remove("project-dir/chmod.txt");
+}

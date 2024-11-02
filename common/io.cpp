@@ -185,6 +185,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<RenameResponse>(recv_buffer, header, sock, handlers.rename_response);
         break;
     }
+    case Type::CHMOD_REQUEST: {
+        ret = recv_handler_caller<ChmodRequest>(recv_buffer, header, sock, handlers.chmod_request);
+        break;
+    }
+    case Type::CHMOD_RESPONSE: {
+        ret = recv_handler_caller<ChmodResponse>(recv_buffer, header, sock, handlers.chmod_response);
+        break;
+    }
     default:
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

@@ -237,6 +237,23 @@ static int chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *
     return EACCES;
 }
 
+static int chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
+    (void)fi;
+    ChmodRequest req = ChmodRequest();
+    req.set_path(path);
+    req.set_mode(mode);
+    ChmodResponse res;
+    int err = request_response<ChmodResponse>(sock, req, &res, CHMOD_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to change mode: %d", res.error());
+    }
+    log(DEBUG, sock, "Change mode: %d", res.error());
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -248,6 +265,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .unlink = unlink_fs,
         .rmdir = rmdir_fs,
         .rename = rename_fs,
+        .chmod = chmod,
         .chown = chown,
         .open = open_fs,
         .read = read_fs,
