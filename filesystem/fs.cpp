@@ -198,6 +198,20 @@ static int unlink_fs(const char *path) {
     return -res.error();
 }
 
+static int rmdir_fs(const char *path) {
+    RmdirRequest req = RmdirRequest();
+    req.set_path(path);
+    RmdirResponse res;
+    int err = request_response<RmdirResponse>(sock, req, &res, RMDIR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to remove directory: %d", res.error());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -207,6 +221,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .getattr = get_attr_request,
         .mkdir = mkdir_fs,
         .unlink = unlink_fs,
+        .rmdir = rmdir_fs,
         .open = open_fs,
         .read = read_fs,
         .write = write_fs,
