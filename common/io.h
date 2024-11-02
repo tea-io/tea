@@ -27,6 +27,8 @@ struct recv_handlers {
     int (*create_response)(int sock, int id, CreateResponse *response);
     int (*mkdir_request)(int sock, int id, MkdirRequest *request);
     int (*mkdir_response)(int sock, int id, MkdirResponse *response);
+    int (*unlink_request)(int sock, int id, UnlinkRequest *request);
+    int (*unlink_response)(int sock, int id, UnlinkResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
