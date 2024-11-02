@@ -252,3 +252,18 @@ TEST_CASE("mknod") {
     REQUIRE(S_ISFIFO(new_stat.st_mode));
     remove("project-dir/mknod.pipe");
 }
+
+TEST_CASE("link") {
+    int fd = open("project-dir/link.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    int err = link("mount-dir/link.txt", "mount-dir/link-new.txt");
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = stat("project-dir/link.txt", &new_stat);
+    REQUIRE(err == 0);
+    err = stat("project-dir/link-new.txt", &new_stat);
+    REQUIRE(err == 0);
+    remove("project-dir/link.txt");
+    remove("project-dir/link-new.txt");
+}

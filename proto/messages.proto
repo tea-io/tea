@@ -31,6 +31,8 @@ enum Type {
   TRUNCATE_RESPONSE = 27;
   MKNOD_REQUEST = 28;
   MKNOD_RESPONSE = 29;
+  LINK_REQUEST = 30;
+  LINK_RESPONSE = 31;
 }
 
 message InitRequest { string name = 1; }
@@ -142,3 +144,10 @@ message MknodRequest {
 }
 
 message MknodResponse { int32 error = 1; }
+
+message LinkRequest {
+  string old_path = 1;
+  string new_path = 2;
+}
+
+message LinkResponse { int32 error = 1; }
