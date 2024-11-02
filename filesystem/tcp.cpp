@@ -49,6 +49,8 @@ recv_handlers handlers = {
     .unlink_response = response_handler<UnlinkResponse *>,
     .rmdir_request = request_handler<RmdirRequest *>,
     .rmdir_response = response_handler<RmdirResponse *>,
+    .rename_request = request_handler<RenameRequest *>,
+    .rename_response = response_handler<RenameResponse *>,
 };
 
 int connect(std::string host, int port) {
