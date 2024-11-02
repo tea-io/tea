@@ -228,6 +228,15 @@ static int rename_fs(const char *old_path, const char *new_path, unsigned int fl
     return -res.error();
 }
 
+static int chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi) {
+    (void)path;
+    (void)uid;
+    (void)gid;
+    (void)fi;
+    // chown is not supported
+    return EACCES;
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -239,6 +248,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .unlink = unlink_fs,
         .rmdir = rmdir_fs,
         .rename = rename_fs,
+        .chown = chown,
         .open = open_fs,
         .read = read_fs,
         .write = write_fs,
