@@ -35,12 +35,15 @@ static int init_request(int sock, int id, InitRequest *req) {
 
 static int get_attr_request(int sock, int id, GetAttrRequest *req) {
     GetAttrResponse res;
+    // check if the path is inside the base path (prevent directory traversal)
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
-        res.set_error(EACCES);
+        res.set_error(EPERM);
     } else {
         struct stat st;
-        int err = stat(path.c_str(), &st);
+        // weekly_cannonical don't work with symlinks
+        std::string raw_path = base_path + req->path();
+        int err = lstat(raw_path.c_str(), &st);
         if (err < 0) {
             res.set_error(errno);
         } else {
@@ -70,7 +73,7 @@ static int open_request(int sock, int id, OpenRequest *req) {
     } else {
         int fd = open(path.c_str(), req->flags());
         if (fd > 0) {
-            fds[req->path()] = fd;
+            fds[path] = fd;
         } else {
             res.set_error(errno);
         }
@@ -86,7 +89,8 @@ static int open_request(int sock, int id, OpenRequest *req) {
 static int release_request(int sock, int id, ReleaseRequest *req) {
     (void)req;
     ReleaseResponse res;
-    int err = close(fds[req->path()]);
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    int err = close(fds[path]);
     if (err < 0) {
         res.set_error(errno);
     } else {
@@ -131,7 +135,8 @@ static int read_dir_request(int sock, int id, ReadDirRequest *req) {
 
 static int read_request(int sock, int id, ReadRequest *req) {
     ReadResponse res;
-    int fd = fds[req->path()];
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    int fd = fds[path];
     if (fd < 0) {
         res.set_error(EBADF);
     }
@@ -152,7 +157,8 @@ static int read_request(int sock, int id, ReadRequest *req) {
 
 static int write_request(int sock, int id, WriteRequest *req) {
     WriteResponse res;
-    int fd = fds[req->path()];
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    int fd = fds[path];
     if (fd < 0) {
         res.set_error(EBADF);
     }
@@ -179,7 +185,7 @@ static int create_request(int sock, int id, CreateRequest *req) {
     } else {
         int fd = creat(path.c_str(), req->mode());
         if (fd > 0) {
-            fds[req->path()] = fd;
+            fds[path] = fd;
         } else {
             res.set_error(errno);
         }
@@ -218,7 +224,8 @@ static int unlink_request(int sock, int id, UnlinkRequest *req) {
     if (path.substr(0, base_path.size()) != base_path) {
         res.set_error(EACCES);
     } else {
-        int err = unlink(path.c_str());
+        std::string raw_path = base_path + req->path();
+        int err = unlink(raw_path.c_str());
         if (err < 0) {
             res.set_error(errno);
         } else {
@@ -392,6 +399,27 @@ static int link_request(int sock, int id, LinkRequest *req) {
     return 0;
 }
 
+static int symlink_request(int sock, int id, SymlinkRequest *req) {
+    SymlinkResponse res;
+    std::string old_path = std::filesystem::weakly_canonical(base_path + req->old_path());
+    std::string new_path = std::filesystem::weakly_canonical(base_path + req->new_path());
+    if (old_path.substr(0, base_path.size()) != base_path || new_path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EXDEV);
+    } else {
+        int err = symlink(old_path.c_str(), new_path.c_str());
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::SYMLINK_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -434,5 +462,7 @@ recv_handlers get_handlers(std::string path) {
         .mknod_response = respons_handler<MknodResponse *>,
         .link_request = link_request,
         .link_response = respons_handler<LinkResponse *>,
+        .symlink_request = symlink_request,
+        .symlink_response = respons_handler<SymlinkResponse *>,
     };
 }
