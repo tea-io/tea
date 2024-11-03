@@ -267,3 +267,17 @@ TEST_CASE("link") {
     remove("project-dir/link.txt");
     remove("project-dir/link-new.txt");
 }
+
+TEST_CASE("symlink"){
+    int fd = open("project-dir/symlink.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    int err = symlink("/symlink.txt", "mount-dir/symlink-new.txt");
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = lstat("project-dir/symlink-new.txt", &new_stat);
+    REQUIRE(err == 0);
+    REQUIRE(S_ISLNK(new_stat.st_mode));
+    remove("project-dir/symlink.txt");
+    remove("project-dir/symlink-new.txt");
+}
