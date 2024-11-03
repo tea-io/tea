@@ -35,6 +35,8 @@ enum Type {
   LINK_RESPONSE = 31;
   SYMLINK_REQUEST = 32;
   SYMLINK_RESPONSE = 33;
+  READ_LINK_REQUEST = 34;
+  READ_LINK_RESPONSE = 35;
 }
 
 message InitRequest { string name = 1; }
@@ -160,3 +162,10 @@ message SymlinkRequest {
 }
 
 message SymlinkResponse { int32 error = 1; }
+
+message ReadLinkRequest { string path = 1; }
+
+message ReadLinkResponse {
+  int32 error = 1;
+  string path = 2;
+}
