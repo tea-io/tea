@@ -2,6 +2,7 @@
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
 #include "tcp.h"
+#include <cstring>
 #include <sys/stat.h>
 
 int sock;
@@ -321,6 +322,25 @@ static int symlink_fs(const char *old_path, const char *new_path) {
     return -res.error();
 }
 
+static int read_link_fs(const char *link, char *buf, size_t s) {
+    ReadLinkRequest req = ReadLinkRequest();
+    req.set_path(link);
+    ReadLinkResponse res;
+    int err = request_response<ReadLinkResponse>(sock, req, &res, READ_LINK_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to readlink: %d", res.error());
+        std::string path = res.path();
+        if (s < path.size()) {
+            path = path.substr(0, s);
+        }
+        strcpy(buf, res.path().c_str());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -328,6 +348,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
     cfg = cfg_param;
     fuse_operations ops = {
         .getattr = get_attr_request,
+        .readlink = read_link_fs,
         .mknod = mknod_fs,
         .mkdir = mkdir_fs,
         .unlink = unlink_fs,

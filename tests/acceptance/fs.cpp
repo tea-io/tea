@@ -4,6 +4,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <list>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -278,6 +279,19 @@ TEST_CASE("symlink"){
     err = lstat("project-dir/symlink-new.txt", &new_stat);
     REQUIRE(err == 0);
     REQUIRE(S_ISLNK(new_stat.st_mode));
+    remove("project-dir/symlink.txt");
+    remove("project-dir/symlink-new.txt");
+}
+
+TEST_CASE("readlink") {
+    int fd = open("project-dir/symlink.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    int err = symlink("/symlink.txt", "mount-dir/symlink-new.txt");
+    REQUIRE(err == 0);
+    std::string path = std::filesystem::canonical("mount-dir/symlink-new.txt");
+    std::string orginal = std::filesystem::canonical("mount-dir/symlink-new.txt");
+    REQUIRE(path == orginal);
     remove("project-dir/symlink.txt");
     remove("project-dir/symlink-new.txt");
 }
