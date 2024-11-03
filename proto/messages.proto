@@ -33,6 +33,8 @@ enum Type {
   MKNOD_RESPONSE = 29;
   LINK_REQUEST = 30;
   LINK_RESPONSE = 31;
+  SYMLINK_REQUEST = 32;
+  SYMLINK_RESPONSE = 33;
 }
 
 message InitRequest { string name = 1; }
@@ -151,3 +153,10 @@ message LinkRequest {
 }
 
 message LinkResponse { int32 error = 1; }
+
+message SymlinkRequest {
+  string old_path = 1;
+  string new_path = 2;
+}
+
+message SymlinkResponse { int32 error = 1; }

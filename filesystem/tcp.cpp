@@ -59,6 +59,8 @@ recv_handlers handlers = {
     .mknod_response = response_handler<MknodResponse *>,
     .link_request = request_handler<LinkRequest *>,
     .link_response = response_handler<LinkResponse *>,
+    .symlink_request = request_handler<SymlinkRequest *>,
+    .symlink_response = response_handler<SymlinkResponse *>,
 };
 
 int connect(std::string host, int port) {

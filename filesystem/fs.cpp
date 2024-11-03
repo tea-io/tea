@@ -301,6 +301,26 @@ static int link_fs(const char *old_path, const char *new_path) {
     return -res.error();
 }
 
+// symlink only works on relative paths inside the mount point
+static int symlink_fs(const char *old_path, const char *new_path) {
+    SymlinkRequest req = SymlinkRequest();
+    std::string old_path_str = old_path;
+    if (old_path[0] != '/') {
+        old_path_str = "/" + old_path_str;
+    }
+    req.set_old_path(old_path_str);
+    req.set_new_path(new_path);
+    SymlinkResponse res;
+    int err = request_response<SymlinkResponse>(sock, req, &res, SYMLINK_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to symlink: %d", res.error());
+    }
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -312,6 +332,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .mkdir = mkdir_fs,
         .unlink = unlink_fs,
         .rmdir = rmdir_fs,
+        .symlink = symlink_fs,
         .rename = rename_fs,
         .link = link_fs,
         .chmod = chmod,

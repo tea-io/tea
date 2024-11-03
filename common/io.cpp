@@ -217,9 +217,18 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<LinkResponse>(recv_buffer, header, sock, handlers.link_response);
         break;
     }
-
+    case Type::SYMLINK_REQUEST: {
+        ret = recv_handler_caller<SymlinkRequest>(recv_buffer, header, sock, handlers.symlink_request);
+        break;
+    }
+    case Type::SYMLINK_RESPONSE: {
+        ret = recv_handler_caller<SymlinkResponse>(recv_buffer, header, sock, handlers.symlink_response);
+        break;
+    }
+    default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
+    }
     }
     if (ret < 0) {
         log(DEBUG, sock, "Handler failed: %d", ret);
