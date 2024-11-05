@@ -366,6 +366,12 @@ static int statfs(const char *path, struct statvfs *stbuf) {
     return -res.error();
 }
 
+static int flush_fs(const char *path, struct fuse_file_info *fi) {
+    (void)path;
+    (void)fi;
+    return 0;
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -388,6 +394,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .read = read_fs,
         .write = write_fs,
         .statfs = statfs,
+        .flush = flush_fs,
         .release = release_fs,
         .readdir = readdir_fs,
         .init = init,
