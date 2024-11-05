@@ -11,6 +11,7 @@
 #include <list>
 #include <string>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -446,6 +447,36 @@ static int read_link_request(int sock, int id, ReadLinkRequest *req) {
     return 0;
 }
 
+static int statfs_request(int sock, int id, StatfsRequest *req) {
+    StatfsResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        struct statvfs st;
+        int err = statvfs(path.c_str(), &st);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+            res.set_frsize(st.f_frsize);
+            res.set_blocks(st.f_blocks);
+            res.set_bfree(st.f_bfree);
+            res.set_bavail(st.f_bavail);
+            res.set_bsize(st.f_bsize);
+            res.set_files(st.f_files);
+            res.set_ffree(st.f_ffree);
+            res.set_namemax(st.f_namemax);
+            res.set_type(st.f_type);
+        }
+    }
+    int err = send_message(sock, id, Type::STATFS_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -455,40 +486,44 @@ template <typename T> int respons_handler(int sock, int id, T message) {
 
 recv_handlers get_handlers(std::string path) {
     base_path = std::filesystem::weakly_canonical(path);
-    return recv_handlers{.init_request = init_request,
-                         .init_response = respons_handler<InitResponse *>,
-                         .get_attr_request = get_attr_request,
-                         .get_attr_response = respons_handler<GetAttrResponse *>,
-                         .open_request = open_request,
-                         .open_response = respons_handler<OpenResponse *>,
-                         .release_request = release_request,
-                         .release_response = respons_handler<ReleaseResponse *>,
-                         .read_dir_request = read_dir_request,
-                         .read_dir_response = respons_handler<ReadDirResponse *>,
-                         .read_request = read_request,
-                         .read_response = respons_handler<ReadResponse *>,
-                         .write_request = write_request,
-                         .write_response = respons_handler<WriteResponse *>,
-                         .create_request = create_request,
-                         .create_response = respons_handler<CreateResponse *>,
-                         .mkdir_request = mkdir_request,
-                         .mkdir_response = respons_handler<MkdirResponse *>,
-                         .unlink_request = unlink_request,
-                         .unlink_response = respons_handler<UnlinkResponse *>,
-                         .rmdir_request = rmdir_request,
-                         .rmdir_response = respons_handler<RmdirResponse *>,
-                         .rename_request = rename_request,
-                         .rename_response = respons_handler<RenameResponse *>,
-                         .chmod_request = chmod_request,
-                         .chmod_response = respons_handler<ChmodResponse *>,
-                         .truncate_request = truncate_request,
-                         .truncate_response = respons_handler<TruncateResponse *>,
-                         .mknod_request = mknod_request,
-                         .mknod_response = respons_handler<MknodResponse *>,
-                         .link_request = link_request,
-                         .link_response = respons_handler<LinkResponse *>,
-                         .symlink_request = symlink_request,
-                         .symlink_response = respons_handler<SymlinkResponse *>,
-                         .read_link_request = read_link_request,
-                         .read_link_response = respons_handler<ReadLinkResponse *>};
+    return recv_handlers{
+        .init_request = init_request,
+        .init_response = respons_handler<InitResponse *>,
+        .get_attr_request = get_attr_request,
+        .get_attr_response = respons_handler<GetAttrResponse *>,
+        .open_request = open_request,
+        .open_response = respons_handler<OpenResponse *>,
+        .release_request = release_request,
+        .release_response = respons_handler<ReleaseResponse *>,
+        .read_dir_request = read_dir_request,
+        .read_dir_response = respons_handler<ReadDirResponse *>,
+        .read_request = read_request,
+        .read_response = respons_handler<ReadResponse *>,
+        .write_request = write_request,
+        .write_response = respons_handler<WriteResponse *>,
+        .create_request = create_request,
+        .create_response = respons_handler<CreateResponse *>,
+        .mkdir_request = mkdir_request,
+        .mkdir_response = respons_handler<MkdirResponse *>,
+        .unlink_request = unlink_request,
+        .unlink_response = respons_handler<UnlinkResponse *>,
+        .rmdir_request = rmdir_request,
+        .rmdir_response = respons_handler<RmdirResponse *>,
+        .rename_request = rename_request,
+        .rename_response = respons_handler<RenameResponse *>,
+        .chmod_request = chmod_request,
+        .chmod_response = respons_handler<ChmodResponse *>,
+        .truncate_request = truncate_request,
+        .truncate_response = respons_handler<TruncateResponse *>,
+        .mknod_request = mknod_request,
+        .mknod_response = respons_handler<MknodResponse *>,
+        .link_request = link_request,
+        .link_response = respons_handler<LinkResponse *>,
+        .symlink_request = symlink_request,
+        .symlink_response = respons_handler<SymlinkResponse *>,
+        .read_link_request = read_link_request,
+        .read_link_response = respons_handler<ReadLinkResponse *>,
+        .statfs_request = statfs_request,
+        .statfs_response = respons_handler<StatfsResponse *>,
+    };
 }

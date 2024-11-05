@@ -37,6 +37,8 @@ enum Type {
   SYMLINK_RESPONSE = 33;
   READ_LINK_REQUEST = 34;
   READ_LINK_RESPONSE = 35;
+  STATFS_REQUEST = 36;
+  STATFS_RESPONSE = 37;
 }
 
 message InitRequest { string name = 1; }
@@ -168,4 +170,19 @@ message ReadLinkRequest { string path = 1; }
 message ReadLinkResponse {
   int32 error = 1;
   string path = 2;
+}
+
+message StatfsRequest { string path = 1; }
+
+message StatfsResponse {
+  int32 error = 1;
+  int64 frsize = 2;
+  int64 blocks = 3;
+  int64 bfree = 4;
+  int64 bavail = 5;
+  int64 bsize = 6;
+  int64 files = 7;
+  int64 ffree = 8;
+  int64 namemax = 9;
+  int32 type = 10;
 }

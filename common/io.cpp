@@ -233,6 +233,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<ReadLinkResponse>(recv_buffer, header, sock, handlers.read_link_response);
         break;
     }
+    case Type::STATFS_REQUEST: {
+        ret = recv_handler_caller<StatfsRequest>(recv_buffer, header, sock, handlers.statfs_request);
+        break;
+    }
+    case Type::STATFS_RESPONSE: {
+        ret = recv_handler_caller<StatfsResponse>(recv_buffer, header, sock, handlers.statfs_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
