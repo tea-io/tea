@@ -341,6 +341,31 @@ static int read_link_fs(const char *link, char *buf, size_t s) {
     return -res.error();
 }
 
+static int statfs(const char *path, struct statvfs *stbuf) {
+    StatfsRequest req = StatfsRequest();
+    req.set_path(path);
+    StatfsResponse res;
+    int err = request_response<StatfsResponse>(sock, req, &res, STATFS_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to statfs: %d", res.error());
+    }
+    if (res.error() != 0) {
+        return -res.error();
+    }
+    stbuf->f_bsize = res.bsize();
+    stbuf->f_frsize = res.frsize();
+    stbuf->f_blocks = res.blocks();
+    stbuf->f_bfree = res.bfree();
+    stbuf->f_bavail = res.bavail();
+    stbuf->f_files = res.files();
+    stbuf->f_ffree = res.ffree();
+    stbuf->f_namemax = res.namemax();
+    return -res.error();
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -362,6 +387,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .open = open_fs,
         .read = read_fs,
         .write = write_fs,
+        .statfs = statfs,
         .release = release_fs,
         .readdir = readdir_fs,
         .init = init,
