@@ -316,6 +316,16 @@ TEST_CASE("statfs") {
     REQUIRE(mount_stat.f_ffree == project_stat.f_ffree);
     REQUIRE(mount_stat.f_namelen == project_stat.f_namelen);
     remove("project-dir/statfs.txt");
+}
 
-
+TEST_CASE("fsync") {
+    int fd = open("project-dir/fsync.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    fd = open("mount-dir/fsync.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    int err = fsync(fd);
+    REQUIRE(err == 0);
+    close(fd);
+    remove("project-dir/fsync.txt");
 }

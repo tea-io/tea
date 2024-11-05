@@ -39,6 +39,8 @@ enum Type {
   READ_LINK_RESPONSE = 35;
   STATFS_REQUEST = 36;
   STATFS_RESPONSE = 37;
+  FSYNC_REQUEST = 38;
+  FSYNC_RESPONSE = 39;
 }
 
 message InitRequest { string name = 1; }
@@ -186,3 +188,7 @@ message StatfsResponse {
   int64 namemax = 9;
   int32 type = 10;
 }
+
+message FsyncRequest { string path = 1; }
+
+message FsyncResponse { int32 error = 1; }

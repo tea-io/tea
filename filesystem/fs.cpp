@@ -372,6 +372,22 @@ static int flush_fs(const char *path, struct fuse_file_info *fi) {
     return 0;
 };
 
+static int fsync_fs(const char *path, int datasync, struct fuse_file_info *fi) {
+    (void)datasync;
+    (void)fi;
+    FsyncRequest req = FsyncRequest();
+    req.set_path(path);
+    FsyncResponse res;
+    int err = request_response<FsyncResponse>(sock, req, &res, FSYNC_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to fsync: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -396,6 +412,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .statfs = statfs,
         .flush = flush_fs,
         .release = release_fs,
+        .fsync = fsync_fs,
         .readdir = readdir_fs,
         .init = init,
         .destroy = destroy,
