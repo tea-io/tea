@@ -8,6 +8,7 @@
 #include <list>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/statfs.h>
 #include <unistd.h>
 
 TEST_CASE("stat") {
@@ -294,4 +295,27 @@ TEST_CASE("readlink") {
     REQUIRE(path == orginal);
     remove("project-dir/symlink.txt");
     remove("project-dir/symlink-new.txt");
+}
+
+TEST_CASE("statfs") {
+    int fd = open("project-dir/statfs.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    close(fd);
+    struct statfs mount_stat;
+    int err = statfs("mount-dir", &mount_stat);
+    REQUIRE(err == 0);
+    struct statfs project_stat;
+    err = statfs("project-dir", &project_stat);
+    REQUIRE(err == 0);
+    REQUIRE(mount_stat.f_bsize == project_stat.f_bsize);
+    REQUIRE(mount_stat.f_blocks == project_stat.f_blocks);
+    REQUIRE(mount_stat.f_bfree == project_stat.f_bfree);
+    REQUIRE(mount_stat.f_bavail == project_stat.f_bavail);
+    REQUIRE(mount_stat.f_frsize == project_stat.f_frsize);
+    REQUIRE(mount_stat.f_files == project_stat.f_files);
+    REQUIRE(mount_stat.f_ffree == project_stat.f_ffree);
+    REQUIRE(mount_stat.f_namelen == project_stat.f_namelen);
+    remove("project-dir/statfs.txt");
+
+
 }

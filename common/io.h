@@ -45,6 +45,8 @@ struct recv_handlers {
     int (*symlink_response)(int sock, int id, SymlinkResponse *response);
     int (*read_link_request)(int sock, int id, ReadLinkRequest *request);
     int (*read_link_response)(int sock, int id, ReadLinkResponse *response);
+    int (*statfs_request)(int sock, int id, StatfsRequest *request);
+    int (*statfs_response)(int sock, int id, StatfsResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

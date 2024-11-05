@@ -63,6 +63,8 @@ recv_handlers handlers = {
     .symlink_response = response_handler<SymlinkResponse *>,
     .read_link_request = request_handler<ReadLinkRequest *>,
     .read_link_response = response_handler<ReadLinkResponse *>,
+    .statfs_request = request_handler<StatfsRequest *>,
+    .statfs_response = response_handler<StatfsResponse *>,
 };
 
 int connect(std::string host, int port) {
