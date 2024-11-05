@@ -65,6 +65,8 @@ recv_handlers handlers = {
     .read_link_response = response_handler<ReadLinkResponse *>,
     .statfs_request = request_handler<StatfsRequest *>,
     .statfs_response = response_handler<StatfsResponse *>,
+    .fsync_request = request_handler<FsyncRequest *>,
+    .fsync_response = response_handler<FsyncResponse *>,
 };
 
 int connect(std::string host, int port) {

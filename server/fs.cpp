@@ -477,6 +477,27 @@ static int statfs_request(int sock, int id, StatfsRequest *req) {
     return 0;
 }
 
+static int fsync_request(int sock, int id, FsyncRequest *req) {
+    FsyncResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        int fd = fds[path];
+        int err = fsync(fd);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::FSYNC_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -525,5 +546,7 @@ recv_handlers get_handlers(std::string path) {
         .read_link_response = respons_handler<ReadLinkResponse *>,
         .statfs_request = statfs_request,
         .statfs_response = respons_handler<StatfsResponse *>,
+        .fsync_request = fsync_request,
+        .fsync_response = respons_handler<FsyncResponse *>,
     };
 }
