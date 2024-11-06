@@ -356,3 +356,18 @@ TEST_CASE("gettxattr") {
     REQUIRE(strncmp(buffer, "test", 4) == 0);
     remove("project-dir/getxattr.txt");
 }
+
+TEST_CASE("listxattr") {
+    int fs = open("project-dir/listxattr.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fs >= 0);
+    close(fs);
+    int err = setxattr("project-dir/listxattr.txt", "user.test1", "test1", 5, 0);
+    REQUIRE(err == 0);
+    err = setxattr("project-dir/listxattr.txt", "user.test2", "test2", 5, 0);
+    REQUIRE(err == 0);
+    char buffer[100];
+    err = listxattr("mount-dir/listxattr.txt", buffer, 100);
+    REQUIRE(err > 0);
+    REQUIRE(strncmp(buffer, "user.test1\0user.test2\0", err) == 0);
+    remove("project-dir/listxattr.txt");
+}

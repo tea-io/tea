@@ -427,6 +427,44 @@ static int getxattr_fs(const char *path, const char *name, char *value, size_t s
     return res.value().size();
 };
 
+static int listxattr_fs(const char *path, char *list, size_t size) {
+    ListxattrRequest req = ListxattrRequest();
+    req.set_path(path);
+    ListxattrResponse res;
+    int err = request_response<ListxattrResponse>(sock, req, &res, LISTXATTR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to listxattr: %d", res.error());
+    }
+    if (res.error() != 0) {
+        return -res.error();
+    }
+    char names[300];
+    size_t total_size = 0;
+    for (int i = 0; i < res.names_size(); i++) {
+        for (size_t j = 0; j < res.names(i).size(); j++) {
+            names[total_size] = res.names(i)[j];
+            total_size++;
+            if (total_size >= 300) {
+                return -ERANGE;
+            }
+        }
+        names[total_size] = '\0';
+        total_size++;
+        if (total_size >= 300) {
+            return -ERANGE;
+        }
+    }
+    if (size < total_size) {
+        return -ERANGE;
+    }
+    memcpy(list, names, total_size);
+    log(DEBUG, sock, "Listxattr size: %d", total_size);
+    return total_size;
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -454,6 +492,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .fsync = fsync_fs,
         .setxattr = setxattr_fs,
         .getxattr = getxattr_fs,
+        .listxattr = listxattr_fs,
         .readdir = readdir_fs,
         .init = init,
         .destroy = destroy,

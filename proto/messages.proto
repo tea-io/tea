@@ -45,6 +45,8 @@ enum Type {
   SETXATTR_RESPONSE = 41;
   GETXATTR_REQUEST = 42;
   GETXATTR_RESPONSE = 43;
+  LISTXATTR_REQUEST = 44;
+  LISTXATTR_RESPONSE = 45;
 }
 
 message InitRequest { string name = 1; }
@@ -214,4 +216,11 @@ message GetxattrRequest {
 message GetxattrResponse {
   int32 error = 1;
   bytes value = 2;
+}
+
+message ListxattrRequest { string path = 1; }
+
+message ListxattrResponse {
+  int32 error = 1;
+  repeated string names = 2;
 }

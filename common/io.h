@@ -53,6 +53,8 @@ struct recv_handlers {
     int (*setxattr_response)(int sock, int id, SetxattrResponse *response);
     int (*getxattr_request)(int sock, int id, GetxattrRequest *request);
     int (*getxattr_response)(int sock, int id, GetxattrResponse *response);
+    int (*listxattr_request)(int sock, int id, ListxattrRequest *request);
+    int (*listxattr_response)(int sock, int id, ListxattrResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
