@@ -541,6 +541,37 @@ static int getxattr_request(int sock, int id, GetxattrRequest *req) {
     return 0;
 }
 
+static int listxattr_request(int sock, int id, ListxattrRequest *req) {
+    ListxattrResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        char buf[300];
+        int err = listxattr(path.c_str(), buf, 300);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+            char *curr = buf;
+            int curr_len = 0;
+            std::string name;
+            while (curr_len < err) {
+                int len = strlen(curr);
+                name.assign(curr, curr + len);
+                res.add_names(name);
+                curr += len + 1;
+                curr_len += len + 1;
+            }
+        }
+    }
+    int err = send_message(sock, id, Type::LISTXATTR_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -595,5 +626,7 @@ recv_handlers get_handlers(std::string path) {
         .setxattr_response = respons_handler<SetxattrResponse *>,
         .getxattr_request = getxattr_request,
         .getxattr_response = respons_handler<GetxattrResponse *>,
+        .listxattr_request = listxattr_request,
+        .listxattr_response = respons_handler<ListxattrResponse *>,
     };
 }
