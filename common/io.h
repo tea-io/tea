@@ -49,6 +49,8 @@ struct recv_handlers {
     int (*statfs_response)(int sock, int id, StatfsResponse *response);
     int (*fsync_request)(int sock, int id, FsyncRequest *request);
     int (*fsync_response)(int sock, int id, FsyncResponse *response);
+    int (*setxattr_request)(int sock, int id, SetxattrRequest *request);
+    int (*setxattr_response)(int sock, int id, SetxattrResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

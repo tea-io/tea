@@ -388,6 +388,23 @@ static int fsync_fs(const char *path, int datasync, struct fuse_file_info *fi) {
     return -res.error();
 };
 
+static int setxattr_fs(const char *path, const char *name, const char *value, size_t size, int flags) {
+    SetxattrRequest req = SetxattrRequest();
+    req.set_path(path);
+    req.set_name(name);
+    req.set_value(value, size);
+    req.set_flags(flags);
+    SetxattrResponse res;
+    int err = request_response<SetxattrResponse>(sock, req, &res, SETXATTR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to setxattr: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -413,6 +430,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .flush = flush_fs,
         .release = release_fs,
         .fsync = fsync_fs,
+        .setxattr = setxattr_fs,
         .readdir = readdir_fs,
         .init = init,
         .destroy = destroy,
