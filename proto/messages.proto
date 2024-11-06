@@ -43,6 +43,8 @@ enum Type {
   FSYNC_RESPONSE = 39;
   SETXATTR_REQUEST = 40;
   SETXATTR_RESPONSE = 41;
+  GETXATTR_REQUEST = 42;
+  GETXATTR_RESPONSE = 43;
 }
 
 message InitRequest { string name = 1; }
@@ -203,3 +205,13 @@ message SetxattrRequest {
 }
 
 message SetxattrResponse { int32 error = 1; }
+
+message GetxattrRequest {
+  string path = 1;
+  string name = 2;
+}
+
+message GetxattrResponse {
+  int32 error = 1;
+  bytes value = 2;
+}
