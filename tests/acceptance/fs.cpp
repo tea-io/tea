@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/statfs.h>
+#include <sys/xattr.h>
 #include <unistd.h>
 
 TEST_CASE("stat") {
@@ -328,4 +329,17 @@ TEST_CASE("fsync") {
     REQUIRE(err == 0);
     close(fd);
     remove("project-dir/fsync.txt");
+}
+
+TEST_CASE("settxattr") {
+    int fs = open("project-dir/setxattr.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fs >= 0);
+    close(fs);
+    int err = setxattr("mount-dir/setxattr.txt", "user.test", "test", 4, 0);
+    REQUIRE(err == 0);
+    char buffer[4];
+    err = getxattr("project-dir/setxattr.txt", "user.test", buffer, 4);
+    REQUIRE(err == 4);
+    REQUIRE(strncmp(buffer, "test", 4) == 0);
+    remove("project-dir/setxattr.txt");
 }

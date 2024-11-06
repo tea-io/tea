@@ -41,6 +41,8 @@ enum Type {
   STATFS_RESPONSE = 37;
   FSYNC_REQUEST = 38;
   FSYNC_RESPONSE = 39;
+  SETXATTR_REQUEST = 40;
+  SETXATTR_RESPONSE = 41;
 }
 
 message InitRequest { string name = 1; }
@@ -192,3 +194,12 @@ message StatfsResponse {
 message FsyncRequest { string path = 1; }
 
 message FsyncResponse { int32 error = 1; }
+
+message SetxattrRequest {
+  string path = 1;
+  string name = 2;
+  bytes value = 3;
+  int32 flags = 4;
+}
+
+message SetxattrResponse { int32 error = 1; }
