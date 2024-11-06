@@ -47,6 +47,8 @@ enum Type {
   GETXATTR_RESPONSE = 43;
   LISTXATTR_REQUEST = 44;
   LISTXATTR_RESPONSE = 45;
+  REMOVEXATTR_REQUEST = 46;
+  REMOVEXATTR_RESPONSE = 47;
 }
 
 message InitRequest { string name = 1; }
@@ -224,3 +226,10 @@ message ListxattrResponse {
   int32 error = 1;
   repeated string names = 2;
 }
+
+message RemovexattrRequest {
+  string path = 1;
+  string name = 2;
+}
+
+message RemovexattrResponse { int32 error = 1; }
