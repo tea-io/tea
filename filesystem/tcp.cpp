@@ -69,6 +69,8 @@ recv_handlers handlers = {
     .fsync_response = response_handler<FsyncResponse *>,
     .setxattr_request = request_handler<SetxattrRequest *>,
     .setxattr_response = response_handler<SetxattrResponse *>,
+    .getxattr_request = request_handler<GetxattrRequest *>,
+    .getxattr_response = response_handler<GetxattrResponse *>,
 };
 
 int connect(std::string host, int port) {

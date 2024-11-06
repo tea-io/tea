@@ -257,6 +257,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<SetxattrResponse>(recv_buffer, header, sock, handlers.setxattr_response);
         break;
     }
+    case Type::GETXATTR_REQUEST: {
+        ret = recv_handler_caller<GetxattrRequest>(recv_buffer, header, sock, handlers.getxattr_request);
+        break;
+    }
+    case Type::GETXATTR_RESPONSE: {
+        ret = recv_handler_caller<GetxattrResponse>(recv_buffer, header, sock, handlers.getxattr_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

@@ -519,6 +519,28 @@ static int setxattr_request(int sock, int id, SetxattrRequest *req) {
     return 0;
 }
 
+static int getxattr_request(int sock, int id, GetxattrRequest *req) {
+    GetxattrResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        char buf[100];
+        int err = getxattr(path.c_str(), req->name().c_str(), buf, 100);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+            res.set_value(buf, err);
+        }
+    }
+    int err = send_message(sock, id, Type::GETXATTR_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -571,5 +593,7 @@ recv_handlers get_handlers(std::string path) {
         .fsync_response = respons_handler<FsyncResponse *>,
         .setxattr_request = setxattr_request,
         .setxattr_response = respons_handler<SetxattrResponse *>,
+        .getxattr_request = getxattr_request,
+        .getxattr_response = respons_handler<GetxattrResponse *>,
     };
 }
