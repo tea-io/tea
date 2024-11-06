@@ -405,6 +405,28 @@ static int setxattr_fs(const char *path, const char *name, const char *value, si
     return -res.error();
 };
 
+static int getxattr_fs(const char *path, const char *name, char *value, size_t size) {
+    GetxattrRequest req = GetxattrRequest();
+    req.set_path(path);
+    req.set_name(name);
+    GetxattrResponse res;
+    int err = request_response<GetxattrResponse>(sock, req, &res, GETXATTR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to getxattr: %d", res.error());
+    }
+    if (res.error() != 0) {
+        return -res.error();
+    }
+    if (size < res.value().size()) {
+        return -ERANGE;
+    }
+    memcpy(value, res.value().c_str(), res.value().size());
+    return res.value().size();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -431,6 +453,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .release = release_fs,
         .fsync = fsync_fs,
         .setxattr = setxattr_fs,
+        .getxattr = getxattr_fs,
         .readdir = readdir_fs,
         .init = init,
         .destroy = destroy,
