@@ -465,6 +465,21 @@ static int listxattr_fs(const char *path, char *list, size_t size) {
     return total_size;
 };
 
+static int removexattr_fs(const char *path, const char *name) {
+    RemovexattrRequest req = RemovexattrRequest();
+    req.set_path(path);
+    req.set_name(name);
+    RemovexattrResponse res;
+    int err = request_response<RemovexattrResponse>(sock, req, &res, REMOVEXATTR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to removexattr: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -493,6 +508,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .setxattr = setxattr_fs,
         .getxattr = getxattr_fs,
         .listxattr = listxattr_fs,
+        .removexattr = removexattr_fs,
         .readdir = readdir_fs,
         .init = init,
         .destroy = destroy,
