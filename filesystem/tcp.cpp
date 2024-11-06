@@ -73,6 +73,8 @@ recv_handlers handlers = {
     .getxattr_response = response_handler<GetxattrResponse *>,
     .listxattr_request = request_handler<ListxattrRequest *>,
     .listxattr_response = response_handler<ListxattrResponse *>,
+    .removexattr_request = request_handler<RemovexattrRequest *>,
+    .removexattr_response = response_handler<RemovexattrResponse *>,
 };
 
 int connect(std::string host, int port) {

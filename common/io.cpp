@@ -273,6 +273,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<ListxattrResponse>(recv_buffer, header, sock, handlers.listxattr_response);
         break;
     }
+    case Type::REMOVEXATTR_REQUEST: {
+        ret = recv_handler_caller<RemovexattrRequest>(recv_buffer, header, sock, handlers.removexattr_request);
+        break;
+    }
+    case Type::REMOVEXATTR_RESPONSE: {
+        ret = recv_handler_caller<RemovexattrResponse>(recv_buffer, header, sock, handlers.removexattr_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
