@@ -24,6 +24,7 @@ struct client_info {
 std::list<client_info> clients_info;
 std::string base_path = "";
 std::map<std::string, int> fds;
+std::map<std::string, DIR *> dirs;
 
 static int init_request(int sock, int id, InitRequest *req) {
     clients_info.push_back(client_info{.fd = sock, .name = req->name()});
@@ -113,7 +114,7 @@ static int read_dir_request(int sock, int id, ReadDirRequest *req) {
     if (path.substr(0, base_path.size()) != base_path) {
         res.set_error(EACCES);
     } else {
-        DIR *dir = opendir(path.c_str());
+        DIR *dir = dirs[path];
         if (dir == nullptr) {
             res.set_error(errno);
         } else {
@@ -592,6 +593,27 @@ static int removexattr_request(int sock, int id, RemovexattrRequest *req) {
     return 0;
 }
 
+static int opendir_request(int sock, int id, OpendirRequest *req) {
+    OpendirResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        DIR *dir = opendir(path.c_str());
+        if (dir == nullptr) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+            dirs[path] = dir;
+        }
+    }
+    int err = send_message(sock, id, Type::OPENDIR_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -650,5 +672,7 @@ recv_handlers get_handlers(std::string path) {
         .listxattr_response = respons_handler<ListxattrResponse *>,
         .removexattr_request = removexattr_request,
         .removexattr_response = respons_handler<RemovexattrResponse *>,
+        .opendir_request = opendir_request,
+        .opendir_response = respons_handler<OpendirResponse *>,
     };
 }

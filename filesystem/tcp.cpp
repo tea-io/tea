@@ -75,6 +75,8 @@ recv_handlers handlers = {
     .listxattr_response = response_handler<ListxattrResponse *>,
     .removexattr_request = request_handler<RemovexattrRequest *>,
     .removexattr_response = response_handler<RemovexattrResponse *>,
+    .opendir_request = request_handler<OpendirRequest *>,
+    .opendir_response = response_handler<OpendirResponse *>,
 };
 
 int connect(std::string host, int port) {
