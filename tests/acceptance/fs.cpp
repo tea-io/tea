@@ -385,3 +385,11 @@ TEST_CASE("removeattr") {
     REQUIRE(err == -1);
     remove("project-dir/removexattr.txt");
 }
+
+TEST_CASE("opendir") {
+    int err = mkdir("project-dir/opendir", 0755);
+    REQUIRE(err == 0);
+    DIR *dir = opendir("mount-dir/opendir");
+    REQUIRE(dir != nullptr);
+    remove("project-dir/opendir");
+}

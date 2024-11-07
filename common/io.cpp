@@ -281,6 +281,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<RemovexattrResponse>(recv_buffer, header, sock, handlers.removexattr_response);
         break;
     }
+    case Type::OPENDIR_REQUEST: {
+        ret = recv_handler_caller<OpendirRequest>(recv_buffer, header, sock, handlers.opendir_request);
+        break;
+    }
+    case Type::OPENDIR_RESPONSE: {
+        ret = recv_handler_caller<OpendirResponse>(recv_buffer, header, sock, handlers.opendir_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
