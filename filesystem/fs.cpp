@@ -4,6 +4,7 @@
 #include "tcp.h"
 #include <cstring>
 #include <sys/stat.h>
+#include <sys/xattr.h>
 
 int sock;
 config cfg;
@@ -480,6 +481,21 @@ static int removexattr_fs(const char *path, const char *name) {
     return -res.error();
 };
 
+static int opendir_fs(const char *path, fuse_file_info *fi) {
+    (void)fi;
+    OpendirRequest req = OpendirRequest();
+    req.set_path(path);
+    OpendirResponse res;
+    int err = request_response<OpendirResponse>(sock, req, &res, OPENDIR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to opendir: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -509,6 +525,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .getxattr = getxattr_fs,
         .listxattr = listxattr_fs,
         .removexattr = removexattr_fs,
+        .opendir = opendir_fs,
         .readdir = readdir_fs,
         .init = init,
         .destroy = destroy,

@@ -49,6 +49,8 @@ enum Type {
   LISTXATTR_RESPONSE = 45;
   REMOVEXATTR_REQUEST = 46;
   REMOVEXATTR_RESPONSE = 47;
+  OPENDIR_REQUEST = 48;
+  OPENDIR_RESPONSE = 49;
 }
 
 message InitRequest { string name = 1; }
@@ -233,3 +235,7 @@ message RemovexattrRequest {
 }
 
 message RemovexattrResponse { int32 error = 1; }
+
+message OpendirRequest { string path = 1; }
+
+message OpendirResponse { int32 error = 1; }

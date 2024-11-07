@@ -57,6 +57,8 @@ struct recv_handlers {
     int (*listxattr_response)(int sock, int id, ListxattrResponse *response);
     int (*removexattr_request)(int sock, int id, RemovexattrRequest *request);
     int (*removexattr_response)(int sock, int id, RemovexattrResponse *response);
+    int (*opendir_request)(int sock, int id, OpendirRequest *request);
+    int (*opendir_response)(int sock, int id, OpendirResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
