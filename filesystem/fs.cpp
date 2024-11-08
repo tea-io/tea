@@ -496,6 +496,21 @@ static int opendir_fs(const char *path, fuse_file_info *fi) {
     return -res.error();
 };
 
+static int releasedir_fs(const char *path, struct fuse_file_info *fi) {
+    (void)fi;
+    ReleasedirRequest req = ReleasedirRequest();
+    req.set_path(path);
+    ReleasedirResponse res;
+    int err = request_response<ReleasedirResponse>(sock, req, &res, RELEASEDIR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to releasedir: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -527,6 +542,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .removexattr = removexattr_fs,
         .opendir = opendir_fs,
         .readdir = readdir_fs,
+        .releasedir = releasedir_fs,
         .init = init,
         .destroy = destroy,
         .create = create_fs,
