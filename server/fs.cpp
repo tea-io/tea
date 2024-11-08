@@ -128,7 +128,6 @@ static int read_dir_request(int sock, int id, ReadDirRequest *req) {
             } else {
                 res.set_error(0);
             }
-            closedir(dir);
         }
     }
     int err = send_message(sock, id, Type::READ_DIR_RESPONSE, &res);
@@ -614,6 +613,30 @@ static int opendir_request(int sock, int id, OpendirRequest *req) {
     return 0;
 }
 
+static int releasedir_fs(int sock, int id, ReleasedirRequest *req) {
+    (void)req;
+    ReleasedirResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    DIR *dir = dirs[path];
+    int err;
+    if (dir == nullptr) {
+        res.set_error(ENOENT);
+    } else {
+        dirs.erase(path);
+        err = closedir(dir);
+    }
+    if (err < 0) {
+        res.set_error(errno);
+    } else {
+        res.set_error(0);
+    }
+    err = send_message(sock, id, Type::RELEASEDIR_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -674,5 +697,7 @@ recv_handlers get_handlers(std::string path) {
         .removexattr_response = respons_handler<RemovexattrResponse *>,
         .opendir_request = opendir_request,
         .opendir_response = respons_handler<OpendirResponse *>,
+        .releasedir_request = releasedir_fs,
+        .releasedir_response = respons_handler<ReleasedirResponse *>,
     };
 }
