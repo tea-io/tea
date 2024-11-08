@@ -7,8 +7,8 @@
 #include <filesystem>
 #include <list>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <sys/statfs.h>
+#include <sys/syscall.h>
 #include <sys/xattr.h>
 #include <unistd.h>
 
@@ -155,7 +155,7 @@ TEST_CASE("unlink") {
     struct stat new_stat;
     err = stat("project-dir/unlink.txt", &new_stat);
     REQUIRE(err == -1);
-    REQUIRE(errno == ENOENT); 
+    REQUIRE(errno == ENOENT);
 }
 
 TEST_CASE("rmdir") {
@@ -170,7 +170,7 @@ TEST_CASE("rmdir") {
 }
 
 TEST_CASE("rename") {
-    SECTION("normal"){
+    SECTION("normal") {
         int fd = open("project-dir/rename.txt", O_RDWR | O_CREAT, 0644);
         REQUIRE(fd >= 0);
         close(fd);
@@ -184,7 +184,7 @@ TEST_CASE("rename") {
         REQUIRE(err == 0);
         remove("project-dir/rename-new.txt");
     }
-    SECTION("exchange"){
+    SECTION("exchange") {
         int fd = open("project-dir/exchange1.txt", O_RDWR | O_CREAT, 0644);
         REQUIRE(fd >= 0);
         int err = write(fd, "1", 1);
@@ -271,7 +271,7 @@ TEST_CASE("link") {
     remove("project-dir/link-new.txt");
 }
 
-TEST_CASE("symlink"){
+TEST_CASE("symlink") {
     int fd = open("project-dir/symlink.txt", O_RDWR | O_CREAT, 0644);
     REQUIRE(fd >= 0);
     close(fd);
@@ -392,4 +392,16 @@ TEST_CASE("opendir") {
     DIR *dir = opendir("mount-dir/opendir");
     REQUIRE(dir != nullptr);
     remove("project-dir/opendir");
+}
+
+TEST_CASE("fsyncdir") {
+    int err = mkdir("project-dir/fsyncdir", 0755);
+    REQUIRE(err == 0);
+    DIR *dir = opendir("mount-dir/fsyncdir");
+    REQUIRE(dir != nullptr);
+    int fd = dirfd(dir);
+    REQUIRE(fd >= 0);
+    err = fsync(fd);
+    REQUIRE(err == 0);
+    remove("project-dir/fsyncdir");
 }

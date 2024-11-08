@@ -496,6 +496,22 @@ static int opendir_fs(const char *path, fuse_file_info *fi) {
     return -res.error();
 };
 
+static int fsyncdir_fs(const char *path, int datasync, struct fuse_file_info *fi) {
+    (void)datasync;
+    (void)fi;
+    FsyncdirRequest req = FsyncdirRequest();
+    req.set_path(path);
+    FsyncdirResponse res;
+    int err = request_response<FsyncdirResponse>(sock, req, &res, FSYNCDIR_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to fsyncdir: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -527,6 +543,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .removexattr = removexattr_fs,
         .opendir = opendir_fs,
         .readdir = readdir_fs,
+        .fsyncdir = fsyncdir_fs,
         .init = init,
         .destroy = destroy,
         .create = create_fs,

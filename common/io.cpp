@@ -289,6 +289,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<OpendirResponse>(recv_buffer, header, sock, handlers.opendir_response);
         break;
     }
+    case Type::FSYNCDIR_REQUEST: {
+        ret = recv_handler_caller<FsyncdirRequest>(recv_buffer, header, sock, handlers.fsyncdir_request);
+        break;
+    }
+    case Type::FSYNCDIR_RESPONSE: {
+        ret = recv_handler_caller<FsyncdirResponse>(recv_buffer, header, sock, handlers.fsyncdir_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

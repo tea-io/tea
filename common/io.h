@@ -59,6 +59,8 @@ struct recv_handlers {
     int (*removexattr_response)(int sock, int id, RemovexattrResponse *response);
     int (*opendir_request)(int sock, int id, OpendirRequest *request);
     int (*opendir_response)(int sock, int id, OpendirResponse *response);
+    int (*fsyncdir_request)(int sock, int id, FsyncdirRequest *request);
+    int (*fsyncdir_response)(int sock, int id, FsyncdirResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
