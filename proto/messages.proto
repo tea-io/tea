@@ -53,6 +53,8 @@ enum Type {
   OPENDIR_RESPONSE = 49;
   RELEASEDIR_REQUEST = 50;
   RELEASEDIR_RESPONSE = 51;
+  FSYNCDIR_REQUEST = 52;
+  FSYNCDIR_RESPONSE = 53;
 }
 
 message InitRequest { string name = 1; }
@@ -245,3 +247,7 @@ message OpendirResponse { int32 error = 1; }
 message ReleasedirRequest { string path = 1; }
 
 message ReleasedirResponse { int32 error = 1; }
+
+message FsyncdirRequest { string path = 1; }
+
+message FsyncdirResponse { int32 error = 1; }

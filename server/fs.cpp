@@ -637,6 +637,28 @@ static int releasedir_fs(int sock, int id, ReleasedirRequest *req) {
     return 0;
 }
 
+static int fsyncdir_request(int sock, int id, FsyncdirRequest *req) {
+    FsyncResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        DIR *dir = dirs[path];
+        int fd = dirfd(dir);
+        int err = fsync(fd);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::FSYNC_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -699,5 +721,7 @@ recv_handlers get_handlers(std::string path) {
         .opendir_response = respons_handler<OpendirResponse *>,
         .releasedir_request = releasedir_fs,
         .releasedir_response = respons_handler<ReleasedirResponse *>,
+        .fsyncdir_request = fsyncdir_request,
+        .fsyncdir_response = respons_handler<FsyncdirResponse *>,
     };
 }

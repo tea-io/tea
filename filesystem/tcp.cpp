@@ -79,6 +79,8 @@ recv_handlers handlers = {
     .opendir_response = response_handler<OpendirResponse *>,
     .releasedir_request = request_handler<ReleasedirRequest *>,
     .releasedir_response = response_handler<ReleasedirResponse *>,
+    .fsyncdir_request = request_handler<FsyncdirRequest *>,
+    .fsyncdir_response = response_handler<FsyncdirResponse *>,
 };
 
 int connect(std::string host, int port) {
