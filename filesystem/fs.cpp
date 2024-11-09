@@ -527,6 +527,23 @@ static int fsyncdir_fs(const char *path, int datasync, struct fuse_file_info *fi
     return -res.error();
 };
 
+static int utimens_fs(const char *path, const struct timespec tv[2], struct fuse_file_info *fi) {
+    (void)fi;
+    UtimensRequest req = UtimensRequest();
+    req.set_path(path);
+    req.set_atime(tv[0].tv_sec);
+    req.set_mtime(tv[1].tv_sec);
+    UtimensResponse res;
+    int err = request_response<UtimensResponse>(sock, req, &res, UTIMENS_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    } else {
+        log(INFO, sock, "Try to utimens: %d", res.error());
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -563,6 +580,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .init = init,
         .destroy = destroy,
         .create = create_fs,
+        .utimens = utimens_fs,
     };
     return ops;
 };

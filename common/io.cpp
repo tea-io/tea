@@ -305,6 +305,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<FsyncdirResponse>(recv_buffer, header, sock, handlers.fsyncdir_response);
         break;
     }
+    case Type::UTIMENS_REQUEST: {
+        ret = recv_handler_caller<UtimensRequest>(recv_buffer, header, sock, handlers.utimens_request);
+        break;
+    }
+    case Type::UTIMENS_RESPONSE: {
+        ret = recv_handler_caller<UtimensResponse>(recv_buffer, header, sock, handlers.utimens_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

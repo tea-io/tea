@@ -659,6 +659,31 @@ static int fsyncdir_request(int sock, int id, FsyncdirRequest *req) {
     return 0;
 }
 
+static int utimens_fs(int sock, int id, UtimensRequest *req) {
+    UtimensResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else {
+        struct timespec times[2];
+        times[0].tv_sec = req->atime();
+        times[0].tv_nsec = 0;
+        times[1].tv_sec = req->mtime();
+        times[1].tv_nsec = 0;
+        int err = utimensat(AT_FDCWD, path.c_str(), times, 0);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::UTIMENS_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -723,5 +748,7 @@ recv_handlers get_handlers(std::string path) {
         .releasedir_response = respons_handler<ReleasedirResponse *>,
         .fsyncdir_request = fsyncdir_request,
         .fsyncdir_response = respons_handler<FsyncdirResponse *>,
+        .utimens_request = utimens_fs,
+        .utimens_response = respons_handler<UtimensResponse *>,
     };
 }

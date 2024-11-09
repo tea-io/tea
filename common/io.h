@@ -63,6 +63,8 @@ struct recv_handlers {
     int (*releasedir_response)(int sock, int id, ReleasedirResponse *response);
     int (*fsyncdir_request)(int sock, int id, FsyncdirRequest *request);
     int (*fsyncdir_response)(int sock, int id, FsyncdirResponse *response);
+    int (*utimens_request)(int sock, int id, UtimensRequest *request);
+    int (*utimens_response)(int sock, int id, UtimensResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
