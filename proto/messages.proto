@@ -53,6 +53,8 @@ enum Type {
   OPENDIR_RESPONSE = 49;
   FSYNCDIR_REQUEST = 50;
   FSYNCDIR_RESPONSE = 51;
+  UTIMENS_REQUEST = 52;
+  UTIMENS_RESPONSE = 53;
 }
 
 message InitRequest { string name = 1; }
@@ -245,3 +247,11 @@ message OpendirResponse { int32 error = 1; }
 message FsyncdirRequest { string path = 1; }
 
 message FsyncdirResponse { int32 error = 1; }
+
+message UtimensRequest {
+  string path = 1;
+  int64 atime = 2;
+  int64 mtime = 3;
+}
+
+message UtimensResponse { int32 error = 1; }

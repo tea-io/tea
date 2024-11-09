@@ -405,3 +405,23 @@ TEST_CASE("fsyncdir") {
     REQUIRE(err == 0);
     remove("project-dir/fsyncdir");
 }
+
+TEST_CASE("utimens") {
+    int err = open("project-dir/utimens.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(err >= 0);
+    close(err);
+    struct timespec times[2];
+    int now = time(nullptr);
+    times[0].tv_sec = now;
+    times[0].tv_nsec = 0;
+    times[1].tv_sec = now;
+    times[1].tv_nsec = 0;
+    err = utimensat(AT_FDCWD, "mount-dir/utimens.txt", times, 0);
+    REQUIRE(err == 0);
+    struct stat new_stat;
+    err = stat("project-dir/utimens.txt", &new_stat);
+    REQUIRE(err == 0);
+    REQUIRE(new_stat.st_atime == now);
+    REQUIRE(new_stat.st_mtime == now);
+    remove("project-dir/utimens.txt");
+}
