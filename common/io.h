@@ -65,6 +65,8 @@ struct recv_handlers {
     int (*utimens_response)(int sock, int id, UtimensResponse *response);
     int (*access_request)(int sock, int id, AccessRequest *request);
     int (*access_response)(int sock, int id, AccessResponse *response);
+    int (*lock_request)(int sock, int id, LockRequest *request);
+    int (*lock_response)(int sock, int id, LockResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

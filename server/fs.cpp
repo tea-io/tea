@@ -681,6 +681,41 @@ static int access_request(int sock, int id, AccessRequest *req) {
     return 0;
 }
 
+static int lock_request(int sock, int id, LockRequest *req) {
+    LockResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (path.substr(0, base_path.size()) != base_path) {
+        res.set_error(EACCES);
+    } else if (fds.find(path) == fds.end()) {
+        res.set_error(EBADF);
+    } else {
+        int fd = fds[path];
+        struct flock lock;
+        lock.l_type = req->lock().l_type();
+        lock.l_whence = req->lock().l_whence();
+        lock.l_start = req->lock().l_start();
+        lock.l_len = req->lock().l_len();
+        int err = fcntl(fd, req->cmd(), &lock);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+        if (req->cmd() == F_GETLK) {
+            Lock *l = res.mutable_lock();
+            l->set_l_type(lock.l_type);
+            l->set_l_whence(lock.l_whence);
+            l->set_l_start(lock.l_start);
+            l->set_l_len(lock.l_len);
+        }
+    }
+    int err = send_message(sock, id, Type::LOCK_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -747,5 +782,7 @@ recv_handlers get_handlers(std::string path) {
         .utimens_response = respons_handler<UtimensResponse *>,
         .access_request = access_request,
         .access_response = respons_handler<AccessResponse *>,
+        .lock_request = lock_request,
+        .lock_response = respons_handler<LockResponse *>,
     };
 }

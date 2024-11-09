@@ -83,6 +83,8 @@ recv_handlers handlers = {
     .utimens_response = response_handler<UtimensResponse *>,
     .access_request = request_handler<AccessRequest *>,
     .access_response = response_handler<AccessResponse *>,
+    .lock_request = request_handler<LockRequest *>,
+    .lock_response = response_handler<LockResponse *>,
 };
 
 int connect(std::string host, int port) {

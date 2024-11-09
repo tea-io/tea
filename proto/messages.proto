@@ -57,6 +57,8 @@ enum Type {
   UTIMENS_RESPONSE = 53;
   ACCESS_REQUEST = 54;
   ACCESS_RESPONSE = 55;
+  LOCK_REQUEST = 56;
+  LOCK_RESPONSE = 57;
 }
 
 message InitRequest { string name = 1; }
@@ -264,3 +266,21 @@ message AccessRequest {
 }
 
 message AccessResponse { int32 error = 1; }
+
+message Lock {
+  int32 l_type = 3;
+  int32 l_whence = 4;
+  int64 l_start = 5;
+  int64 l_len = 6;
+}
+
+message LockRequest {
+  string path = 1;
+  int32 cmd = 2;
+  Lock lock = 3;
+}
+
+message LockResponse {
+  int32 error = 1;
+  optional Lock lock = 2;
+}

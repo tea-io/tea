@@ -542,6 +542,32 @@ static int access_fs(const char *path, int mask) {
     return -res.error();
 };
 
+static int lock_fs(const char *path, struct fuse_file_info *fi, int cmd, struct flock *lock) {
+    (void)fi;
+    LockRequest req = LockRequest();
+    req.set_path(path);
+    req.set_cmd(cmd);
+    Lock *req_lock = req.mutable_lock();
+    req_lock->set_l_type(lock->l_type);
+    req_lock->set_l_whence(lock->l_whence);
+    req_lock->set_l_start(lock->l_start);
+    req_lock->set_l_len(lock->l_len);
+    LockResponse res;
+    int err = request_response<LockResponse>(sock, req, &res, LOCK_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    }
+    if (cmd == F_GETLK) {
+        lock->l_type = res.lock().l_type();
+        lock->l_whence = res.lock().l_whence();
+        lock->l_start = res.lock().l_start();
+        lock->l_len = res.lock().l_len();
+        lock->l_pid = getpid();
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -578,6 +604,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .destroy = destroy,
         .access = access_fs,
         .create = create_fs,
+        .lock = lock_fs,
         .utimens = utimens_fs,
     };
     return ops;

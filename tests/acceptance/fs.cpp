@@ -434,3 +434,38 @@ TEST_CASE("access") {
     REQUIRE(err == 0);
     remove("project-dir/access.txt");
 }
+
+TEST_CASE("lock") {
+    int project_fd = open("project-dir/lock.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(project_fd >= 0);
+    write(project_fd, "123456789", 9);
+    int lock_fd = open("mount-dir/lock.txt", O_RDWR, 0644);
+    REQUIRE(lock_fd >= 0);
+    struct flock lock;
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 5;
+    int err = fcntl(project_fd, F_SETLK, &lock);
+    REQUIRE(err == 0);
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 9;
+    err = fcntl(lock_fd, F_GETLK, &lock);
+    REQUIRE(err == 0);
+    REQUIRE(lock.l_type == F_WRLCK);
+    lock.l_type = F_UNLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 5;
+    err = fcntl(project_fd, F_SETLK, &lock);
+    REQUIRE(err == 0);
+    lock.l_type = F_WRLCK;
+    err = fcntl(lock_fd, F_GETLK, &lock);
+    REQUIRE(err == 0);
+    REQUIRE(lock.l_type == F_UNLCK);
+    close(project_fd);
+    close(lock_fd);
+    remove("project-dir/lock.txt");
+}
