@@ -313,6 +313,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<UtimensResponse>(recv_buffer, header, sock, handlers.utimens_response);
         break;
     }
+    case Type::ACCESS_REQUEST: {
+        ret = recv_handler_caller<AccessRequest>(recv_buffer, header, sock, handlers.access_request);
+        break;
+    }
+    case Type::ACCESS_RESPONSE: {
+        ret = recv_handler_caller<AccessResponse>(recv_buffer, header, sock, handlers.access_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;

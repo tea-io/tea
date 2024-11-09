@@ -57,6 +57,8 @@ enum Type {
   FSYNCDIR_RESPONSE = 53;
   UTIMENS_REQUEST = 54;
   UTIMENS_RESPONSE = 55;
+  ACCESS_REQUEST = 56;
+  ACCESS_RESPONSE = 57;
 }
 
 message InitRequest { string name = 1; }
@@ -261,3 +263,10 @@ message UtimensRequest {
 }
 
 message UtimensResponse { int32 error = 1; }
+
+message AccessRequest {
+  string path = 1;
+  int32 mode = 2;
+}
+
+message AccessResponse { int32 error = 1; }
