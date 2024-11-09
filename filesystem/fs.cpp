@@ -583,6 +583,13 @@ static int lock_fs(const char *path, struct fuse_file_info *fi, int cmd, struct 
     return -res.error();
 };
 
+static int bmap_fs(const char *path, size_t blocksize, uint64_t *idx) {
+    (void)path;
+    (void)blocksize;
+    (void)idx;
+    return -ENOSYS;
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -622,6 +629,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .create = create_fs,
         .lock = lock_fs,
         .utimens = utimens_fs,
+        .bmap = bmap_fs,
     };
     return ops;
 };
