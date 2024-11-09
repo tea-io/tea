@@ -575,6 +575,16 @@ static int bmap_fs(const char *path, size_t blocksize, uint64_t *idx) {
     return -ENOSYS;
 };
 
+static int ioctl_fs(const char *path, int cmd, void *arg, struct fuse_file_info *fi, unsigned int flags, void *data) {
+    (void)path;
+    (void)cmd;
+    (void)arg;
+    (void)fi;
+    (void)flags;
+    (void)data;
+    return -ENOSYS;
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -613,6 +623,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .create = create_fs,
         .lock = lock_fs,
         .utimens = utimens_fs,
+        .ioctl = ioctl_fs,
     };
     return ops;
 };
