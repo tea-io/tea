@@ -529,6 +529,19 @@ static int utimens_fs(const char *path, const struct timespec tv[2], struct fuse
     return -res.error();
 };
 
+static int access_fs(const char *path, int mask) {
+    AccessRequest req = AccessRequest();
+    req.set_path(path);
+    req.set_mode(mask);
+    AccessResponse res;
+    int err = request_response<AccessResponse>(sock, req, &res, ACCESS_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -563,6 +576,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .fsyncdir = fsyncdir_fs,
         .init = init,
         .destroy = destroy,
+        .access = access_fs,
         .create = create_fs,
         .utimens = utimens_fs,
     };

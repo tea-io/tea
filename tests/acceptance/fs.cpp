@@ -425,3 +425,12 @@ TEST_CASE("utimens") {
     REQUIRE(new_stat.st_mtime == now);
     remove("project-dir/utimens.txt");
 }
+
+TEST_CASE("access") {
+    int err = open("project-dir/access.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(err >= 0);
+    close(err);
+    err = access("mount-dir/access.txt", F_OK);
+    REQUIRE(err == 0);
+    remove("project-dir/access.txt");
+}
