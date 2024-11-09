@@ -321,6 +321,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<AccessResponse>(recv_buffer, header, sock, handlers.access_response);
         break;
     }
+    case Type::LOCK_REQUEST: {
+        ret = recv_handler_caller<LockRequest>(recv_buffer, header, sock, handlers.lock_request);
+        break;
+    }
+    case Type::LOCK_RESPONSE: {
+        ret = recv_handler_caller<LockResponse>(recv_buffer, header, sock, handlers.lock_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
