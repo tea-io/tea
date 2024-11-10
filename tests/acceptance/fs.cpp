@@ -6,11 +6,15 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <list>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <sys/syscall.h>
 #include <sys/xattr.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 TEST_CASE("stat") {
     SECTION("file") {
@@ -468,4 +472,26 @@ TEST_CASE("lock") {
     close(project_fd);
     close(lock_fd);
     remove("project-dir/lock.txt");
+}
+
+TEST_CASE("flock") {
+    int fd = open("mount-dir/flock.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    int err = flock(fd, LOCK_EX);
+    REQUIRE(err == 0);
+    int lock_fd = open("project-dir/flock.txt", O_RDWR, 0644);
+    pid_t pid = fork();
+    if (pid == 0) {
+        int err = flock(lock_fd, LOCK_EX | LOCK_NB);
+        REQUIRE(err == -1);
+        REQUIRE(errno == EWOULDBLOCK);
+        exit(0);
+    } else {
+        waitpid(pid, &err, 0);
+        REQUIRE(WIFEXITED(err));
+        REQUIRE(WEXITSTATUS(err) == 0);
+        int err = flock(fd, LOCK_UN);
+        REQUIRE(err == 0);
+        remove("project-dir/flock.txt");
+    }
 }

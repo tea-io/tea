@@ -10,6 +10,7 @@
 #include <linux/limits.h>
 #include <list>
 #include <string>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/syscall.h>
@@ -739,6 +740,27 @@ static int lock_request(int sock, int id, LockRequest *req) {
     return 0;
 }
 
+static int flock_request(int sock, int id, FlockRequest *req) {
+    FlockResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (fds.find(path) == fds.end()) {
+        res.set_error(EBADF);
+    } else {
+        int fd = fds[path];
+        int err = flock(fd, req->op());
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::FLOCK_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -809,5 +831,7 @@ recv_handlers get_handlers(std::string path) {
         .access_response = respons_handler<AccessResponse *>,
         .lock_request = lock_request,
         .lock_response = respons_handler<LockResponse *>,
+        .flock_request = flock_request,
+        .flock_response = respons_handler<FlockResponse *>,
     };
 }
