@@ -168,7 +168,6 @@ static int write_request(int sock, int id, WriteRequest *req) {
         res.set_error(EBADF);
     }
     int n = write(fd, req->data().c_str(), req->data().size());
-    log(ERROR, sock, "Write %d bytes", n);
     if (n < 0) {
         res.set_error(errno);
     } else {
@@ -782,6 +781,28 @@ static int fallocate_request(int sock, int id, FallocateRequest *req) {
     return 0;
 }
 
+static int lseek_request(int sock, int id, LseekRequest *req) {
+    LseekResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (fds.find(path) == fds.end()) {
+        res.set_error(EBADF);
+    } else {
+        int fd = fds[path];
+        off_t off = lseek(fd, req->offset(), req->whence());
+        if (off < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+            res.set_offset(off);
+        }
+    }
+    int err = send_message(sock, id, Type::LSEEK_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -856,5 +877,7 @@ recv_handlers get_handlers(std::string path) {
         .flock_response = respons_handler<FlockResponse *>,
         .fallocate_request = fallocate_request,
         .fallocate_response = respons_handler<FallocateResponse *>,
+        .lseek_request = lseek_request,
+        .lseek_response = respons_handler<LseekResponse *>,
     };
 }

@@ -345,6 +345,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<FallocateResponse>(recv_buffer, header, sock, handlers.fallocate_response);
         break;
     }
+    case Type::LSEEK_REQUEST: {
+        ret = recv_handler_caller<LseekRequest>(recv_buffer, header, sock, handlers.lseek_request);
+        break;
+    }
+    case Type::LSEEK_RESPONSE: {
+        ret = recv_handler_caller<LseekResponse>(recv_buffer, header, sock, handlers.lseek_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
