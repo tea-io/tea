@@ -61,6 +61,7 @@ jobs:
 
   acceptance:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
     - name: Install nix
       uses: cachix/install-nix-action@v27
