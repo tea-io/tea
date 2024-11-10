@@ -600,6 +600,20 @@ static int ioctl_fs(const char *path, int cmd, void *arg, struct fuse_file_info 
     return -ENOSYS;
 };
 
+static int flock_fs(const char *path, struct fuse_file_info *fi, int op) {
+    (void)fi;
+    FlockRequest req = FlockRequest();
+    req.set_path(path);
+    req.set_op(op);
+    FlockResponse res;
+    int err = request_response<FlockResponse>(sock, req, &res, FLOCK_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -641,6 +655,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .utimens = utimens_fs,
         .bmap = bmap_fs,
         .ioctl = ioctl_fs,
+        .flock = flock_fs,
     };
     return ops;
 };

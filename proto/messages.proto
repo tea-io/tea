@@ -61,6 +61,8 @@ enum Type {
   ACCESS_RESPONSE = 57;
   LOCK_REQUEST = 58;
   LOCK_RESPONSE = 59;
+  FLOCK_REQUEST = 60;
+  FLOCK_RESPONSE = 61;
 }
 
 message InitRequest { string name = 1; }
@@ -290,3 +292,10 @@ message LockResponse {
   int32 error = 1;
   optional Lock lock = 2;
 }
+
+message FlockRequest {
+  string path = 1;
+  int32 op = 2;
+}
+
+message FlockResponse { int32 error = 1; }
