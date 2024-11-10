@@ -614,6 +614,22 @@ static int flock_fs(const char *path, struct fuse_file_info *fi, int op) {
     return -res.error();
 };
 
+static int fallocate_fs(const char *path, int mode, off_t offset, off_t length, struct fuse_file_info *fi) {
+    (void)fi;
+    FallocateRequest req = FallocateRequest();
+    req.set_path(path);
+    req.set_mode(mode);
+    req.set_offset(offset);
+    req.set_len(length);
+    FallocateResponse res;
+    int err = request_response<FallocateResponse>(sock, req, &res, FALLOCATE_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    }
+    return -res.error();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -656,6 +672,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .bmap = bmap_fs,
         .ioctl = ioctl_fs,
         .flock = flock_fs,
+        .fallocate = fallocate_fs,
     };
     return ops;
 };

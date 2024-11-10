@@ -63,6 +63,8 @@ enum Type {
   LOCK_RESPONSE = 59;
   FLOCK_REQUEST = 60;
   FLOCK_RESPONSE = 61;
+  FALLOCATE_REQUEST = 62;
+  FALLOCATE_RESPONSE = 63;
 }
 
 message InitRequest { string name = 1; }
@@ -299,3 +301,12 @@ message FlockRequest {
 }
 
 message FlockResponse { int32 error = 1; }
+
+message FallocateRequest {
+  string path = 1;
+  int32 mode = 2;
+  int64 offset = 3;
+  int64 len = 4;
+}
+
+message FallocateResponse { int32 error = 1; }

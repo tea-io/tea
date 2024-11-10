@@ -495,3 +495,14 @@ TEST_CASE("flock") {
         remove("project-dir/flock.txt");
     }
 }
+
+TEST_CASE("fallocate") {
+    int fd = open("mount-dir/fallocate.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    int err = fallocate(fd, 0, 0, 10);
+    REQUIRE(err == 0);
+    err = write(fd, "123456789", 9);
+    REQUIRE(err == 9);
+    close(fd);
+    remove("project-dir/fallocate.txt");
+}

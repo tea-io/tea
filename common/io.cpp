@@ -337,6 +337,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
         ret = recv_handler_caller<FlockResponse>(recv_buffer, header, sock, handlers.flock_response);
         break;
     }
+    case Type::FALLOCATE_REQUEST: {
+        ret = recv_handler_caller<FallocateRequest>(recv_buffer, header, sock, handlers.fallocate_request);
+        break;
+    }
+    case Type::FALLOCATE_RESPONSE: {
+        ret = recv_handler_caller<FallocateResponse>(recv_buffer, header, sock, handlers.fallocate_response);
+        break;
+    }
     default: {
         log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
         break;
