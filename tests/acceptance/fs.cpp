@@ -506,3 +506,21 @@ TEST_CASE("fallocate") {
     close(fd);
     remove("project-dir/fallocate.txt");
 }
+
+TEST_CASE("lseek") {
+    int fd = open("project-dir/lseek.txt", O_RDWR | O_CREAT, 0644);
+    REQUIRE(fd >= 0);
+    int err = write(fd, "123456789", 9);
+    REQUIRE(err == 9);
+    err = lseek(fd, 100, SEEK_SET);
+    REQUIRE(err == 100);
+    err = write(fd, "123456789", 9);
+    REQUIRE(err == 9);
+    close(fd);
+    fd = open("mount-dir/lseek.txt", O_RDWR, 0644);
+    REQUIRE(fd >= 0);
+    off_t offset = lseek(fd, 10, SEEK_HOLE);
+    REQUIRE(offset == 109);
+    close(fd);
+    remove("project-dir/lseek.txt");
+}

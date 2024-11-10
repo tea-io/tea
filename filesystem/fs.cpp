@@ -630,6 +630,25 @@ static int fallocate_fs(const char *path, int mode, off_t offset, off_t length, 
     return -res.error();
 };
 
+// This is only for LSEEK_DATA and LSEEK_HOLE
+static off_t lseek_fs(const char *path, off_t offset, int whence, struct fuse_file_info *fi) {
+    (void)fi;
+    LseekRequest req = LseekRequest();
+    req.set_path(path);
+    req.set_offset(offset);
+    req.set_whence(whence);
+    LseekResponse res;
+    int err = request_response<LseekResponse>(sock, req, &res, LSEEK_REQUEST);
+    if (err < 0) {
+        log(ERROR, sock, "Error sending message");
+        return -1;
+    }
+    if (res.error() != 0) {
+        return -res.error();
+    }
+    return res.offset();
+};
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
@@ -673,6 +692,7 @@ fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
         .ioctl = ioctl_fs,
         .flock = flock_fs,
         .fallocate = fallocate_fs,
+        .lseek = lseek_fs,
     };
     return ops;
 };

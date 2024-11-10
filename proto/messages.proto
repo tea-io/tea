@@ -65,6 +65,8 @@ enum Type {
   FLOCK_RESPONSE = 61;
   FALLOCATE_REQUEST = 62;
   FALLOCATE_RESPONSE = 63;
+  LSEEK_REQUEST = 64;
+  LSEEK_RESPONSE = 65;
 }
 
 message InitRequest { string name = 1; }
@@ -310,3 +312,14 @@ message FallocateRequest {
 }
 
 message FallocateResponse { int32 error = 1; }
+
+message LseekRequest {
+  string path = 1;
+  int64 offset = 2;
+  int32 whence = 3;
+}
+
+message LseekResponse {
+  int32 error = 1;
+  int64 offset = 2;
+}

@@ -91,6 +91,8 @@ recv_handlers handlers = {
     .flock_response = response_handler<FlockResponse *>,
     .fallocate_request = request_handler<FallocateRequest *>,
     .fallocate_response = response_handler<FallocateResponse *>,
+    .lseek_request = request_handler<LseekRequest *>,
+    .lseek_response = response_handler<LseekResponse *>,
 };
 
 int connect(std::string host, int port) {
