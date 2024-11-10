@@ -761,6 +761,27 @@ static int flock_request(int sock, int id, FlockRequest *req) {
     return 0;
 }
 
+static int fallocate_request(int sock, int id, FallocateRequest *req) {
+    FallocateResponse res;
+    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
+    if (fds.find(path) == fds.end()) {
+        res.set_error(EBADF);
+    } else {
+        int fd = fds[path];
+        int err = fallocate(fd, req->mode(), req->offset(), req->len());
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
+    }
+    int err = send_message(sock, id, Type::FALLOCATE_RESPONSE, &res);
+    if (err < 0) {
+        return -1;
+    }
+    return 0;
+}
+
 template <typename T> int respons_handler(int sock, int id, T message) {
     (void)sock;
     (void)id;
@@ -833,5 +854,7 @@ recv_handlers get_handlers(std::string path) {
         .lock_response = respons_handler<LockResponse *>,
         .flock_request = flock_request,
         .flock_response = respons_handler<FlockResponse *>,
+        .fallocate_request = fallocate_request,
+        .fallocate_response = respons_handler<FallocateResponse *>,
     };
 }

@@ -71,6 +71,8 @@ struct recv_handlers {
     int (*lock_response)(int sock, int id, LockResponse *response);
     int (*flock_request)(int sock, int id, FlockRequest *request);
     int (*flock_response)(int sock, int id, FlockResponse *response);
+    int (*fallocate_request)(int sock, int id, FallocateRequest *request);
+    int (*fallocate_response)(int sock, int id, FallocateResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
