@@ -461,7 +461,9 @@ static int listxattr_fs(const char *path, char *list, size_t size) {
     if (size < total_size) {
         return -ERANGE;
     }
-    memcpy(list, names, total_size);
+    if (total_size != 0) {
+        memcpy(list, names, total_size);
+    }
     log(DEBUG, sock, "Listxattr size: %d", total_size);
     return total_size;
 };
