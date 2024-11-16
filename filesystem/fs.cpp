@@ -499,6 +499,9 @@ static int opendir_fs(const char *path, fuse_file_info *fi) {
 static int releasedir_fs(const char *path, struct fuse_file_info *fi) {
     (void)fi;
     ReleasedirRequest req = ReleasedirRequest();
+    if (path == NULL) {
+        return 0;
+    }
     req.set_path(path);
     ReleasedirResponse res;
     int err = request_response<ReleasedirResponse>(sock, req, &res, RELEASEDIR_REQUEST);
