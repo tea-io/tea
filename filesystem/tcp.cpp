@@ -7,12 +7,12 @@
 
 std::map<int, std::string> messages;
 std::map<int, std::condition_variable> conditions;
-std::map<int, std::mutex> mutexes;
+std::mutex condition_mutex;
 int requst_id = 0;
 
 template <typename T> int response_handler(int sock, int id, T message) {
     (void)sock;
-    std::unique_lock<std::mutex> lock(mutexes[id]);
+    std::unique_lock<std::mutex> lock(condition_mutex);
     messages[id] = message->SerializeAsString();
     conditions[id].notify_all();
     lock.unlock();
