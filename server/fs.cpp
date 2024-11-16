@@ -249,6 +249,10 @@ static int rmdir_request(int sock, int id, RmdirRequest *req) {
     if (path.substr(0, base_path.size()) != base_path) {
         res.set_error(EACCES);
     } else {
+        if (dirs[path] != nullptr) {
+            closedir(dirs[path]);
+            dirs.erase(path);
+        }
         int err = rmdir(path.c_str());
         if (err < 0) {
             res.set_error(errno);
