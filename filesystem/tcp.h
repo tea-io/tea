@@ -8,7 +8,7 @@
 extern int requst_id;
 extern std::map<int, std::string> messages;
 extern std::map<int, std::condition_variable> conditions;
-extern std::map<int, std::mutex> mutexes;
+extern std::mutex condition_mutex;
 
 int connect(std::string host, int port);
 
@@ -16,12 +16,14 @@ int recv_thread(int sock);
 
 template <typename T> int request_response(int sock, google::protobuf::Message &request, T *response, Type type) {
     int id = ++requst_id;
-    std::unique_lock<std::mutex> lock(mutexes[id]);
     int err = send_message(sock, id, type, &request);
     if (err < 0) {
         return -1;
     }
-    conditions[id].wait(lock);
+    std::unique_lock<std::mutex> lock(condition_mutex);
+    if (conditions.find(id) == conditions.end()) {
+        conditions[id].wait(lock);
+    }
     response->ParseFromString(messages[id]);
     return 0;
 }
