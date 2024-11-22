@@ -5,13 +5,16 @@
 #include <cstring>
 #include <sys/stat.h>
 #include <sys/xattr.h>
+#include <thread>
 
 int sock;
 config cfg;
+std::thread t;
 
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
     (void)f_cfg;
+    t = std::thread(recv_thread, sock);
     InitRequest req = InitRequest();
     req.set_name(cfg.name);
     InitResponse res;
@@ -28,6 +31,7 @@ static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
 static void destroy(void *private_data) {
     (void)private_data;
     google::protobuf::ShutdownProtobufLibrary();
+    t.detach();
     close(sock);
 };
 
