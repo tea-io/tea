@@ -71,8 +71,6 @@ int main(int argc, char *argv[]) {
         if (sock < 0) {
             return 1;
         }
-
-        t = std::thread(recv_thread, sock);
     }
 
     config cfg = {.name = opts.name};
