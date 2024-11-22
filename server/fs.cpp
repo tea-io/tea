@@ -146,14 +146,17 @@ static int read_request(int sock, int id, ReadRequest *req) {
         res.set_error(EBADF);
     }
     char *buf = new char[req->size()];
-    int n = read(fd, buf, req->size());
-    if (n < 0) {
+    int err = lseek(fd, req->offset(), SEEK_SET);
+    if (err >= 0) {
+        err = read(fd, buf, req->size());
+    }
+    if (err < 0) {
         res.set_error(errno);
     } else {
         res.set_error(0);
-        res.set_data(buf, n);
+        res.set_data(buf, err);
     }
-    int err = send_message(sock, id, Type::READ_RESPONSE, &res);
+    err = send_message(sock, id, Type::READ_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
@@ -167,14 +170,17 @@ static int write_request(int sock, int id, WriteRequest *req) {
     if (fd < 0) {
         res.set_error(EBADF);
     }
-    int n = write(fd, req->data().c_str(), req->data().size());
-    if (n < 0) {
+    int err = lseek(fd, req->offset(), SEEK_SET);
+    if (err >= 0) {
+        err = write(fd, req->data().c_str(), req->data().size());
+    }
+    if (err < 0) {
         res.set_error(errno);
     } else {
         res.set_error(0);
-        res.set_size(n);
+        res.set_size(err);
     }
-    int err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
+    err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
