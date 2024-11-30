@@ -116,10 +116,18 @@ message ReadResponse {
   bytes data = 2;
 }
 
+enum WriteFlag {
+  REPLACE = 0;
+  APPEND = 1;
+  DELETE = 2;
+}
+
 message WriteRequest {
   string path = 1;
   int64 offset = 2;
   bytes data = 3;
+  int64 size = 4;
+  WriteFlag flag = 5;
 }
 
 message WriteResponse {
