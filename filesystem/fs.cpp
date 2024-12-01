@@ -159,6 +159,8 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
     if (static_cast<long unsigned int>(res.size()) != size) {
         return -1;
     }
+    patch_local_copy(path, buf, size, offset);
+
     return res.size();
 };
 
