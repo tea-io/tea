@@ -107,7 +107,7 @@ int connect(std::string host, int port) {
     addr.sin_addr.s_addr = inet_addr(host.c_str());
     if (connect(sock, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
         log(ERROR, sock, "Error connecting to port %d: %s", port, strerror(errno));
-        return 1;
+        return -1;
     }
     log(INFO, sock, "Connected to port %d", port);
     return sock;

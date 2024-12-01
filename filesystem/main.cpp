@@ -36,6 +36,12 @@ static void show_help(char *progname) {
               "    --help               Print this help\n");
 }
 
+static void cleanup_routine(fuse_args *args, const int sock_fd) {
+    fuse_opt_free_args(args);
+    if (sock_fd >= 0)
+        close(sock_fd);
+};
+
 int main(int argc, char *argv[]) {
     set_debug_log(true);
     log(NONE, banner.c_str());
@@ -52,10 +58,10 @@ int main(int argc, char *argv[]) {
     opts.host = NULL;
 
     if (fuse_opt_parse(&args, &opts, option_spec, NULL) == -1) {
+        cleanup_routine(&args, -1);
         return 1;
     }
     int sock = -1;
-    std::thread t;
     if (opts.show_help) {
         show_help(args.argv[0]);
         assert(fuse_opt_add_arg(&args, "--help") == 0);
@@ -64,11 +70,13 @@ int main(int argc, char *argv[]) {
         fuse_set_log_func(fuse_log_wrapper);
         if (opts.host == NULL && opts.show_help == false) {
             log(ERROR, "Host is required");
+            cleanup_routine(&args, sock);
             return 1;
         }
 
         sock = connect(opts.host, opts.port);
         if (sock < 0) {
+            cleanup_routine(&args, sock);
             return 1;
         }
     }
@@ -78,11 +86,7 @@ int main(int argc, char *argv[]) {
     struct fuse_operations oper = get_fuse_operations(sock, cfg);
 
     int ret = fuse_main(args.argc, args.argv, &oper, NULL);
-    fuse_opt_free_args(&args);
 
-    if (!opts.show_help) {
-        t.detach();
-        close(sock);
-    }
+    cleanup_routine(&args, sock);
     return ret;
 };
