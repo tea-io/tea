@@ -1,6 +1,7 @@
 #include "fs.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
+#include "local_copy.h"
 #include "tcp.h"
 #include <cstring>
 #include <sys/stat.h>
@@ -77,6 +78,8 @@ static int open_fs(const char *path, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to open file: %d", res.error());
     }
+    ensure_local_copy_initialized(sock, path);
+
     return -res.error();
 };
 
@@ -172,6 +175,8 @@ static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to create file: %d", res.error());
     }
+    ensure_local_copy_initialized(sock, path);
+
     return -res.error();
 };
 
@@ -201,6 +206,8 @@ static int unlink_fs(const char *path) {
     } else {
         log(INFO, sock, "Try to unlink: %d", res.error());
     }
+    discard_local_copy(path);
+
     return -res.error();
 }
 
