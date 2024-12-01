@@ -106,6 +106,9 @@ _deps
 # External projects
 *-prefix/
 
+/.idea/codeStyles/Project.xml
+/.idea/codeStyles/codeStyleConfig.xml
+
 # End of https://www.toptal.com/developers/gitignore/api/clion+all,cmake
 
 proto/proto.pb.o
