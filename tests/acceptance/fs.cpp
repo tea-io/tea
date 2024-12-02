@@ -5,16 +5,16 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <filesystem>
+#include <iostream>
 #include <list>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <sys/syscall.h>
-#include <sys/xattr.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#include <sys/xattr.h>
+#include <unistd.h>
 
 TEST_CASE("stat") {
     SECTION("file") {
@@ -117,16 +117,63 @@ TEST_CASE("write") {
     close(fd);
     fd = open("mount-dir/write.txt", O_RDWR, 0644);
     REQUIRE(fd >= 0);
-    char buffer[10] = "123456789";
-    int err = write(fd, buffer, 10);
-    REQUIRE(err == 10);
-    close(fd);
-    fd = open("project-dir/write.txt", O_RDWR, 0644);
-    REQUIRE(fd >= 0);
-    char read_buffer[10];
-    err = read(fd, read_buffer, 10);
-    REQUIRE(strncmp(read_buffer, buffer, 10) == 0);
-    REQUIRE(err == 10);
+
+    SECTION("INSERT NEW DATA") {
+        char buffer[10] = "123456789";
+        int err = write(fd, buffer, 10);
+        REQUIRE(err == 10);
+        err = lseek(fd, 0, SEEK_SET);
+        REQUIRE(err >= 0);
+        char read_buffer[10];
+        err = read(fd, read_buffer, 10);
+        REQUIRE(err == 10);
+        REQUIRE(strncmp(read_buffer, buffer, 10) == 0);
+        REQUIRE(err == 10);
+    }
+
+    SECTION("APPEND") {
+        char buffer[15] = "12345abcde6789";
+        int err = lseek(fd, 0, SEEK_SET);
+        REQUIRE(err >= 0);
+        err = write(fd, buffer, 15);
+        REQUIRE(err == 15);
+        err = lseek(fd, 0, SEEK_SET);
+        REQUIRE(err >= 0);
+        char read_buffer[15];
+        err = read(fd, read_buffer, 15);
+        REQUIRE(err == 15);
+        REQUIRE(strncmp(read_buffer, buffer, 15) == 0);
+    }
+
+    SECTION("DELETE") {
+        char buffer[10] = "123456789";
+        int err = lseek(fd, 0, SEEK_SET);
+        REQUIRE(err >= 0);
+        err = write(fd, buffer, 10);
+        REQUIRE(err == 10);
+        err = ftruncate(fd, 10);
+        REQUIRE(err == 0);
+        err = lseek(fd, 0, SEEK_SET);
+        REQUIRE(err >= 0);
+        char read_buffer[10];
+        err = read(fd, read_buffer, 10);
+        REQUIRE(err == 10);
+        REQUIRE(strncmp(read_buffer, buffer, 15) == 0);
+    }
+
+    SECTION("REPLACE") {
+        char buffer[10] = "12345ABCD";
+        int err = lseek(fd, 0, SEEK_SET);
+        REQUIRE(err >= 0);
+        err = write(fd, buffer, 10);
+        REQUIRE(err == 10);
+        err = lseek(fd, 0, SEEK_SET);
+        REQUIRE(err >= 0);
+        char read_buffer[10];
+        err = read(fd, read_buffer, 10);
+        REQUIRE(err == 10);
+        REQUIRE(strncmp(read_buffer, buffer, 15) == 0);
+    }
     close(fd);
     remove("project-dir/write.txt");
 }

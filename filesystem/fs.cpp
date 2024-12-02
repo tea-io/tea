@@ -1,4 +1,5 @@
 #include "fs.h"
+#include "../common/diff.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
 #include "local_copy.h"
@@ -144,11 +145,11 @@ static int read_fs(const char *path, char *buf, size_t size, off_t offset, struc
 };
 
 static int write_fs(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-    (void)fi;
+    auto operations = diff(get_local_copy(fi->fh, size, offset), std::string(buf, size), offset);
     WriteRequest req = WriteRequest();
     req.set_path(path);
-    req.set_offset(offset);
-    req.set_data(buf, size);
+    req.mutable_operations()->Assign(operations.begin(), operations.end());
+
     WriteResponse res;
     int err = request_response<WriteResponse>(sock, req, &res, WRITE_REQUEST);
     if (err < 0) {
@@ -158,12 +159,9 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
         log(INFO, sock, "Try to write file: %d", res.error());
     }
     if (res.error() != 0) {
-        return -res.error();
+        return res.error();
     }
-    if (static_cast<long unsigned int>(res.size()) != size) {
-        return -1;
-    }
-    return res.size();
+    return size;
 };
 
 static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
