@@ -1,13 +1,12 @@
-#ifndef LOCALCOPY_H
-#define LOCALCOPY_H
+#pragma once
 #include <optional>
 #include <string_view>
 
-void ensure_local_copy_initialized(int socket, const char *path);
-void patch_local_copy(const char *path, const char *data, size_t size, size_t offset);
-void discard_local_copy(const char *path);
-void truncate_local_copy(const char *path, size_t size);
+// fd is the fh field from the fuse_file_info struct
+void init_local_copy(int fd);
+void patch_local_copy(int fd, const char *data, size_t size, size_t offset);
+void discard_local_copy(int fd);
+void truncate_local_copy(int fd, size_t size);
 
-std::optional<std::string_view> get_local_copy(const char *path);
-
-#endif // LOCALCOPY_H
+std::string get_local_copy(int fd);
+std::string get_local_copy(int fd, size_t size, size_t offset);

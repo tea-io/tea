@@ -11,6 +11,7 @@
 int sock;
 config cfg;
 std::thread t;
+int fh_iterator;
 
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
@@ -67,6 +68,7 @@ static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_fi
 };
 
 static int open_fs(const char *path, struct fuse_file_info *fi) {
+    fi->fh = fh_iterator++;
     OpenRequest req = OpenRequest();
     req.set_path(path);
     req.set_flags(fi->flags);
@@ -78,7 +80,7 @@ static int open_fs(const char *path, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to open file: %d", res.error());
     }
-    ensure_local_copy_initialized(sock, path);
+    init_local_copy(fi->fh);
 
     return -res.error();
 };
@@ -119,7 +121,6 @@ static int readdir_fs(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 };
 
 static int read_fs(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-    (void)fi;
     ReadRequest req = ReadRequest();
     req.set_path(path);
     req.set_size(size);
@@ -136,6 +137,7 @@ static int read_fs(const char *path, char *buf, size_t size, off_t offset, struc
         return -res.error();
     }
     memcpy(buf, res.data().c_str(), res.data().size());
+    patch_local_copy(fi->fh, buf, res.data().size(), offset);
     return res.data().size();
 };
 
@@ -159,13 +161,11 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
     if (static_cast<long unsigned int>(res.size()) != size) {
         return -1;
     }
-    patch_local_copy(path, buf, size, offset);
-
     return res.size();
 };
 
 static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
-    (void)fi;
+    fi->fh = fh_iterator++;
     CreateRequest req = CreateRequest();
     req.set_path(path);
     req.set_mode(mode);
@@ -177,8 +177,7 @@ static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to create file: %d", res.error());
     }
-    ensure_local_copy_initialized(sock, path);
-
+    init_local_copy(fi->fh);
     return -res.error();
 };
 
@@ -208,8 +207,6 @@ static int unlink_fs(const char *path) {
     } else {
         log(INFO, sock, "Try to unlink: %d", res.error());
     }
-    discard_local_copy(path);
-
     return -res.error();
 }
 
@@ -382,7 +379,7 @@ static int statfs(const char *path, struct statvfs *stbuf) {
 
 static int flush_fs(const char *path, struct fuse_file_info *fi) {
     (void)path;
-    (void)fi;
+    discard_local_copy(fi->fh);
     return 0;
 };
 
