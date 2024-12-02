@@ -1,10 +1,9 @@
 #include "diff.h"
 #include "../lib/dtl/dtl/dtl.hpp"
-
 #include <algorithm>
 
-std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
-    std::vector<WriteRequest> diffs;
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f, size_t start_offset) {
+    std::vector<WriteOperation> diffs;
 
     dtl::Diff<char, std::string> d(e, f);
     d.compose();
@@ -14,21 +13,23 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     auto s = d.getSes().getSequence();
     auto type = dtl::SES_COMMON;
 
-    for (int i = 0; i < s.size(); i++) {
+    for (long unsigned int i = 0; i < s.size(); i++) {
         const auto &elem = s[i];
-
-        if (elem.second.type == dtl::SES_COMMON) {
-            continue;
-        }
 
         if (elem.second.type != type || offset == -1) {
             if (!agg.empty()) {
-                WriteRequest wr;
-                wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
-                wr.set_data(agg);
-                wr.set_offset(offset);
-                wr.set_size(agg.size());
-                diffs.push_back(wr);
+                WriteOperation w;
+                if (type == dtl::SES_ADD) {
+                    w.set_flag(APPEND);
+                } else if (type == dtl::SES_DELETE) {
+                    w.set_flag(DELETE);
+                } else {
+                    w.set_flag(COMMON);
+                }
+                w.set_data(agg);
+                w.set_offset(offset + start_offset);
+                w.set_size(agg.size());
+                diffs.push_back(w);
             }
 
             offset = i;
@@ -39,13 +40,15 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     }
 
     if (!agg.empty()) {
-        WriteRequest wr;
-        wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
-        wr.set_data(agg);
-        wr.set_offset(offset);
-        wr.set_size(agg.size());
-        diffs.push_back(wr);
+        WriteOperation w;
+        w.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
+        w.set_data(agg);
+        w.set_offset(offset + start_offset);
+        w.set_size(agg.size());
+        diffs.push_back(w);
     }
 
     return diffs;
 }
+
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f) { return diff(e, f, 0); }

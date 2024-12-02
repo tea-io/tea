@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
         log(ERROR, "Directory %s does not exist", argv[1]);
         return 1;
     }
-    set_debug_log(true);
+    set_debug_log(false);
     log(NONE, banner.c_str());
     listen(5210, get_handlers(path));
     return 0;

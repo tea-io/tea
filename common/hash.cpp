@@ -1,4 +1,4 @@
-#include <cstdint>
+#include "hash.h"
 #include <cstring>
 
 const uint32_t POLYNOMIAL = 0xEDB88320;
