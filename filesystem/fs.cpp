@@ -55,9 +55,11 @@ static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_fi
     stbuf->st_mode = res.mode();
     stbuf->st_size = res.size();
     stbuf->st_nlink = res.nlink();
-    stbuf->st_atime = res.atime();
-    stbuf->st_mtime = res.mtime();
-    stbuf->st_ctime = res.ctime();
+    if (!cfg.vim_mode) {
+        stbuf->st_atime = res.atime();
+        stbuf->st_mtime = res.mtime();
+        stbuf->st_ctime = res.ctime();
+    }
     if (res.own()) {
         stbuf->st_uid = getuid();
     }

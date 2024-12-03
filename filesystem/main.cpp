@@ -21,11 +21,13 @@ static struct options {
     int port;
     bool show_help;
     const char *name;
+    bool vim_mode;
 } opts;
 
 #define OPTION(t, p) {t, offsetof(struct options, p), 1}
-static const struct fuse_opt option_spec[] = {OPTION("--host=%s", host),   OPTION("-h=%s", host),     OPTION("--port=%d", port), OPTION("-p=%d", port),
-                                              OPTION("--help", show_help), OPTION("--name=%s", name), OPTION("-n=%s", name),     FUSE_OPT_END};
+static const struct fuse_opt option_spec[] = {
+    OPTION("--host=%s", host), OPTION("-h=%s", host), OPTION("--port=%d", port), OPTION("-p=%d", port),  OPTION("--help", show_help),
+    OPTION("--name=%s", name), OPTION("-n=%s", name), OPTION("--vim", vim_mode), OPTION("-v", vim_mode), FUSE_OPT_END};
 
 static void show_help(char *progname) {
     log(NONE, "usage: %s [options] <mountpoint>\n\n", progname);
@@ -33,6 +35,7 @@ static void show_help(char *progname) {
               "    -h   --host=<s>      The host of server (required)\n"
               "    -p   --port=<d>      The port of server (default: 5210)\n"
               "    -n   --name=<s>      The display name of user (default: login name)\n"
+              "    -v   --vim           Enable vim mode\n"
               "    --help               Print this help\n");
 }
 
@@ -56,6 +59,7 @@ int main(int argc, char *argv[]) {
     opts.port = 5210;
     opts.name = strdup(login);
     opts.host = NULL;
+    opts.vim_mode = false;
 
     if (fuse_opt_parse(&args, &opts, option_spec, NULL) == -1) {
         cleanup_routine(&args, -1);
@@ -81,7 +85,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    config cfg = {.name = opts.name};
+    config cfg = {.name = opts.name, .vim_mode = opts.vim_mode};
 
     struct fuse_operations oper = get_fuse_operations(sock, cfg);
 
