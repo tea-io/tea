@@ -1,5 +1,9 @@
 #include "ot.h"
+#include "../common/hash.h"
 #include <algorithm>
+#include <fcntl.h>
+
+std::vector<WriteOperation> operations;
 
 // transformation all kind of operations based on the previous append operation
 static int append_all(WriteOperation *bef, WriteOperation *req) {
@@ -77,3 +81,60 @@ int transform(WriteOperation *req, WriteOperation *bef) {
         return 0;
     }
 }
+
+static uint32_t hash_current(std::string path) {
+    int fd = open(path.c_str(), O_RDONLY);
+    if (fd < 0) {
+        return -1;
+    }
+    char buf[4096];
+    crc32_begin();
+    while (true) {
+        int err = read(fd, buf, 4096);
+        if (err < 0) {
+            close(fd);
+            return -1;
+        }
+        if (err == 0) {
+            break;
+        }
+        crc32_sum(buf, err);
+    }
+    return crc32_end();
+}
+
+int ot(std::list<WriteOperation *> reqs, std::string path) {
+    WriteOperation *req = reqs.front();
+    uint32_t hash = hash_current(path);
+    if (req->hash() != hash) {
+        return 0;
+    }
+
+    auto coll = std::find_if(operations.begin(), operations.end(), [req](WriteOperation op) { return op.hash() == req->hash(); });
+
+    if (coll == operations.end()) {
+        return -1;
+    }
+
+    coll++;
+
+    for (auto it = coll; it != operations.end(); it++) {
+        for (auto it_req = reqs.begin(); it_req != reqs.end(); it_req++) {
+            transform(*it_req, &(*it));
+        }
+    }
+    return 0;
+}
+
+int ot_add(WriteOperation *req, std::string path) {
+    uint32_t hash = hash_current(path);
+    if (hash == -1) {
+        return -2;
+    }
+    req->set_hash(hash);
+    operations.insert(operations.begin(), *req);
+    if (operations.size() > 20) {
+        operations.pop_back();
+    }
+    return 0;
+};

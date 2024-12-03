@@ -1,6 +1,7 @@
 #include "fs.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
+#include "ot.h"
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -284,14 +285,28 @@ static int write_request(int sock, int id, WriteRequest *req) {
     if (fd < 0) {
         res.set_error(EBADF);
     }
+    std::list<WriteOperation *> operations;
     for (int i = 0; i < req->operations_size(); i++) {
-        int err = uwrite(fd, req->mutable_operations(i));
+        operations.push_back(req->mutable_operations(i));
+    }
+    int err = ot(operations, path);
+    if (err < 0) {
+        log(ERROR, sock, "Error applying ot: %d", err);
+    }
+    for (int i = 0; i < req->operations_size(); i++) {
+        err = uwrite(fd, req->mutable_operations(i));
         if (err < 0) {
             res.set_error(err);
             break;
         }
+        err = ot_add(req->mutable_operations(i), path);
+        if (err < 0) {
+            log(ERROR, sock, "Error adding operation to ot");
+            res.set_error(err);
+            break;
+        }
     }
-    int err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
+    err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }

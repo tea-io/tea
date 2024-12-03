@@ -1,10 +1,12 @@
 #include "fs.h"
 #include "../common/diff.h"
+#include "../common/hash.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
 #include "local_copy.h"
 #include "tcp.h"
 #include <cstring>
+#include <string>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 #include <thread>
@@ -18,6 +20,7 @@ static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
     (void)f_cfg;
     t = std::thread(recv_thread, sock);
+    init_crc_table();
     InitRequest req = InitRequest();
     req.set_name(cfg.name);
     InitResponse res;
@@ -147,6 +150,11 @@ static int read_fs(const char *path, char *buf, size_t size, off_t offset, struc
 static int write_fs(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
     auto operations = diff(get_local_copy(fi->fh, size, offset), std::string(buf, size), offset);
     WriteRequest req = WriteRequest();
+    std::string local_copy = get_local_copy(fi->fh);
+    auto hash = crc32(local_copy.c_str(), local_copy.length());
+    for (auto &operation : operations) {
+        operation.set_hash(hash);
+    }
     req.set_path(path);
     req.mutable_operations()->Assign(operations.begin(), operations.end());
 

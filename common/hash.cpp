@@ -1,3 +1,4 @@
+#include "hash.h"
 #include <cstdint>
 #include <cstring>
 
@@ -27,3 +28,16 @@ uint32_t crc32(const char *buffer, size_t length) {
     }
     return ~crc;
 }
+
+uint32_t crc = 0xFFFFFFFF;
+
+void crc32_begin() { crc = 0xFFFFFFFF; }
+
+void crc32_sum(char *buffer, size_t length) {
+    for (size_t i = 0; i < length; ++i) {
+        uint8_t index = static_cast<uint8_t>((crc ^ buffer[i]) & 0xFF);
+        crc = (crc >> 8) ^ crc_table[index];
+    }
+}
+
+uint32_t crc32_end() { return ~crc; }

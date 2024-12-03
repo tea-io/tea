@@ -129,6 +129,7 @@ message WriteOperation {
   bytes data = 3;
   int64 size = 4;
   WriteFlag flag = 5;
+  int32 hash = 6;
 }
 
 message WriteRequest {

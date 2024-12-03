@@ -1,3 +1,4 @@
+#include "../common/hash.h"
 #include "../common/log.h"
 #include "fs.h"
 #include "tcp.h"
@@ -25,6 +26,7 @@ int main(int argc, char *argv[]) {
     }
     set_debug_log(true);
     log(NONE, banner.c_str());
+    init_crc_table();
     listen(5210, get_handlers(path));
     return 0;
 };
