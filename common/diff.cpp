@@ -1,30 +1,50 @@
 #include "diff.h"
+#include "../lib/dtl/dtl/dtl.hpp"
 
 #include <algorithm>
 
 std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     std::vector<WriteRequest> diffs;
-    size_t p = std::mismatch(e.begin(), e.end(), f.begin(), f.end()).first - e.begin();
-    size_t s = std::mismatch(e.rbegin(), e.rend(), f.rbegin(), f.rend()).first - e.rbegin();
 
-    if (p + s < e.size()) {
-        WriteRequest w;
-        w.set_offset(p);
-        w.set_data(e.substr(p, e.size() - p - s));
-        w.set_size(e.size() - p - s);
-        w.set_flag(DELETE);
+    dtl::Diff<char, std::string> d(e, f);
+    d.compose();
 
-        diffs.push_back(w);
+    int offset = -1;
+    std::string agg;
+    auto s = d.getSes().getSequence();
+    auto type = dtl::SES_COMMON;
+
+    for (int i = 0; i < s.size(); i++) {
+        const auto &elem = s[i];
+
+        if (elem.second.type == dtl::SES_COMMON) {
+            continue;
+        }
+
+        if (elem.second.type != type || offset == -1) {
+            if (!agg.empty()) {
+                WriteRequest wr;
+                wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
+                wr.set_data(agg);
+                wr.set_offset(offset);
+                wr.set_size(agg.size());
+                diffs.push_back(wr);
+            }
+
+            offset = i;
+            agg.clear();
+            type = elem.second.type;
+        }
+        agg += elem.first;
     }
 
-    if (p + s < f.size()) {
-        WriteRequest w;
-        w.set_offset(p);
-        w.set_data(f.substr(p, f.size() - p - s));
-        w.set_size(f.size() - p - s);
-        w.set_flag(APPEND);
-
-        diffs.push_back(w);
+    if (!agg.empty()) {
+        WriteRequest wr;
+        wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
+        wr.set_data(agg);
+        wr.set_offset(offset);
+        wr.set_size(agg.size());
+        diffs.push_back(wr);
     }
 
     return diffs;
