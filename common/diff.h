@@ -6,4 +6,6 @@
 
 #include "../proto/messages.pb.h"
 
-std::vector<WriteRequest> diff(const std::string &e, const std::string &f);
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f);
+
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f, size_t offset);

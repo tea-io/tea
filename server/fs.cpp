@@ -1,6 +1,7 @@
 #include "fs.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -9,6 +10,7 @@
 #include <filesystem>
 #include <linux/limits.h>
 #include <list>
+#include <memory>
 #include <string>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -163,6 +165,126 @@ static int read_request(int sock, int id, ReadRequest *req) {
     return 0;
 }
 
+static int write_replace(int fd, WriteOperation *op) {
+    int err = lseek(fd, op->offset(), SEEK_SET);
+    if (err >= 0) {
+        err = write(fd, op->data().c_str(), op->data().size());
+    }
+    if (err < 0) {
+        return -errno;
+    }
+    return 0;
+}
+
+static int write_append(int fd, WriteOperation *op) {
+    struct stat st;
+    int err = fstat(fd, &st);
+    if (err < 0) {
+        return -errno;
+    }
+    int size = st.st_size - op->offset();
+    if (size < 0) {
+        size = 0;
+    }
+    std::unique_ptr<char[]> buf(new char[size]);
+    if (size > 0) {
+        err = lseek(fd, op->offset(), SEEK_SET);
+        if (err < 0) {
+            return -errno;
+        }
+        size = read(fd, buf.get(), size);
+        if (size < 0) {
+            // read fallocate region
+            // TODO: improve reading to avoid holes
+            if (errno == EBADF) {
+                size = 0;
+            } else {
+                return -errno;
+            }
+        }
+    }
+
+    err = lseek(fd, op->offset(), SEEK_SET);
+    if (err < 0) {
+        return -errno;
+    }
+    err = write(fd, op->data().c_str(), op->data().size());
+    if (err < 0) {
+        return -errno;
+    }
+
+    if (size > 0) {
+        err = write(fd, buf.get(), size);
+        if (err < 0) {
+            return -errno;
+        }
+    }
+    buf.release();
+    return 0;
+}
+
+static int write_delete(int fd, WriteOperation *op) {
+    struct stat st;
+    int err = fstat(fd, &st);
+    if (err < 0) {
+        return -errno;
+    }
+    int size = st.st_size - op->offset() - op->size();
+    if (size < 0) {
+        size = 0;
+    }
+    std::unique_ptr<char[]> buf(new char[size]);
+    if (size > 0) {
+        err = lseek(fd, op->offset() + op->size(), SEEK_SET);
+        if (err < 0) {
+            return -errno;
+        }
+        size = read(fd, buf.get(), size);
+        if (err < 0) {
+            // read fallocate region
+            // TODO: improve reading to avoid holes
+            if (errno == EBADF) {
+                size = 0;
+            } else {
+                return -errno;
+            }
+        }
+    }
+    err = ftruncate(fd, op->offset());
+    if (err < 0) {
+        return -errno;
+    }
+    if (size > 0) {
+        err = lseek(fd, op->offset(), SEEK_SET);
+        if (err < 0) {
+            return -errno;
+        }
+        err = write(fd, buf.get(), size);
+        if (err < 0) {
+            return -errno;
+        }
+    }
+    return 0;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
+static int uwrite(int fd, WriteOperation *op) {
+    switch (op->flag()) {
+    case REPLACE:
+        return write_replace(fd, op);
+    case APPEND:
+        return write_append(fd, op);
+    case DELETE:
+        return write_delete(fd, op);
+    case COMMON:
+        return write_replace(fd, op);
+    default:
+        return -1;
+    }
+}
+#pragma GCC diagnostic pop
+
 static int write_request(int sock, int id, WriteRequest *req) {
     WriteResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
@@ -170,17 +292,14 @@ static int write_request(int sock, int id, WriteRequest *req) {
     if (fd < 0) {
         res.set_error(EBADF);
     }
-    int err = lseek(fd, req->offset(), SEEK_SET);
-    if (err >= 0) {
-        err = write(fd, req->data().c_str(), req->data().size());
+    for (int i = 0; i < req->operations_size(); i++) {
+        int err = uwrite(fd, req->mutable_operations(i));
+        if (err < 0) {
+            res.set_error(err);
+            break;
+        }
     }
-    if (err < 0) {
-        res.set_error(errno);
-    } else {
-        res.set_error(0);
-        res.set_size(err);
-    }
-    err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
+    int err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
