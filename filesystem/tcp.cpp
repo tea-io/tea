@@ -95,6 +95,11 @@ recv_handlers handlers = {.fs{
     .lseek_response = response_handler<LseekResponse *>,
 }};
 
+recv_handlers event_handlers = {.event{
+    .write_lock_request = request_handler<WriteLockRequest *>,
+    .write_unlock_request = request_handler<WriteUnlockRequest *>,
+}};
+
 int connect(std::string host, int port) {
     int sock;
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -113,9 +118,9 @@ int connect(std::string host, int port) {
     return sock;
 }
 
-int recv_thread(int sock) {
+static int recv_thread(int sock, bool json) {
     while (true) {
-        int err = handle_recv(sock, handlers);
+        int err = handle_recv(sock, handlers, json);
         if (err < 0) {
             log(ERROR, sock, "Error handling message");
             return -1;
@@ -129,3 +134,6 @@ int recv_thread(int sock) {
     }
     return 1;
 }
+
+int recv_thread_proto(int sock) { return recv_thread(sock, false); }
+int recv_thread_json(int sock) { return recv_thread(sock, true); }

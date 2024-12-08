@@ -68,6 +68,8 @@ enum Type {
   LSEEK_REQUEST = 64;
   LSEEK_RESPONSE = 65;
   CURSOR_POSITION_EVENT = 66;
+  WRITE_LOCK_REQUEST = 67;
+  WRITE_UNLOCK_REQUEST = 68;
 }
 
 message InitRequest { string name = 1; }
@@ -338,3 +340,7 @@ message CursorPosition {
   string path = 2;
   string name = 3;
 }
+
+message WriteLockRequest { string path = 1; }
+
+message WriteUnlockRequest { string path = 1; }
