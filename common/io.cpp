@@ -8,6 +8,34 @@
 #include <cstring>
 #include <google/protobuf/message.h>
 
+int listen(int port) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return 1;
+    }
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    constexpr int one = 1;
+    int err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    if (err < 0) {
+        log(ERROR, sock, "Error setting socket options: %s", strerror(errno));
+        return 1;
+    }
+    if (bind(sock, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
+        log(ERROR, sock, "Error bind port: %s", strerror(errno));
+        return 1;
+    }
+    err = listen(sock, 10);
+    if (err < 0) {
+        log(ERROR, sock, "Error listening: %s", strerror(errno));
+        return 1;
+    }
+    return sock;
+}
+
 int send_message(int sock, int id, Type type, google::protobuf::Message *body) {
     Header header;
     header.size = body->ByteSizeLong();
@@ -65,28 +93,7 @@ template <typename T> int recv_handler_caller(char *recv_buffer, Header *header,
     return ret;
 }
 
-// Handle recv messages, 1 on success, 0 on EOF, -1 on error
-int handle_recv(int sock, recv_handlers &handlers) {
-    char buffer[HEADER_SIZE];
-    int recived = full_read(sock, *buffer, sizeof(buffer));
-    if (recived == 0) {
-        return 0;
-    }
-    if (recived < static_cast<int>(sizeof(buffer))) {
-        log(DEBUG, sock, "Full header read failed");
-        return -1;
-    }
-    Header *header = new Header();
-    deserialize(buffer, header);
-    log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header->size, header->id, header->type, recived);
-    char *recv_buffer = new char[header->size];
-    recived = full_read(sock, *recv_buffer, header->size);
-    if (recived == 0 && header->size != 0) {
-        return 0;
-    }
-    if (recived < header->size) {
-        return -1;
-    }
+static int fs_handle_recv(int sock, Header *header, char *recv_buffer, fs_handlers &handlers) {
     int ret = -2;
     switch (header->type) {
     case Type::INIT_REQUEST: {
@@ -363,6 +370,57 @@ int handle_recv(int sock, recv_handlers &handlers) {
     } else {
         log(DEBUG, sock, "Handler success: %d", ret);
         ret = 1;
+    }
+    return ret;
+};
+
+static int event_handle_recv(int sock, Header *header, char *recv_buffer, event_handlers &handlers) {
+    int ret = -2;
+    switch (header->type) {
+    case Type::CURSOR_POSITION_EVENT: {
+        ret = recv_handler_caller<CursorPosition>(recv_buffer, header, sock, handlers.cursor_position);
+        break;
+    }
+    default: {
+        log(DEBUG, sock, "(%d) Unknown message type: %d", header->id, header->type);
+        break;
+    }
+    }
+    if (ret < 0) {
+        log(DEBUG, sock, "Handler failed: %d", ret);
+    } else {
+        log(DEBUG, sock, "Handler success: %d", ret);
+        ret = 1;
+    }
+    return ret;
+};
+
+int handle_recv(int sock, recv_handlers &handlers) {
+    char buffer[HEADER_SIZE];
+    int recived = full_read(sock, *buffer, sizeof(buffer));
+    if (recived == 0) {
+        return 0;
+    }
+    if (recived < static_cast<int>(sizeof(buffer))) {
+        log(DEBUG, sock, "Full header read failed");
+        return -1;
+    }
+    Header *header = new Header();
+    deserialize(buffer, header);
+    log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header->size, header->id, header->type, recived);
+    char *recv_buffer = new char[header->size];
+    recived = full_read(sock, *recv_buffer, header->size);
+    if (recived == 0 && header->size != 0) {
+        return 0;
+    }
+    if (recived < header->size) {
+        return -1;
+    }
+    int ret = -3;
+    if (handlers.fs.init_request) {
+        ret = fs_handle_recv(sock, header, recv_buffer, handlers.fs);
+    } else if (handlers.event.cursor_position) {
+        ret = event_handle_recv(sock, header, recv_buffer, handlers.event);
     }
     delete header;
     delete[] recv_buffer;

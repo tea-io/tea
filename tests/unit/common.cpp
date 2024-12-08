@@ -80,7 +80,7 @@ TEST_CASE("handle_recv") {
     request.set_name("test");
     int err = send_message(fd1, 1, INIT_REQUEST, &request);
     REQUIRE(err > 0);
-    recv_handlers handlers = {
+    recv_handlers handlers = {.fs{
         .init_request =
             [](int sock, int id, InitRequest *request) {
                 (void)sock;
@@ -89,7 +89,7 @@ TEST_CASE("handle_recv") {
                 return 1;
             },
         .init_response = nullptr,
-    };
+    }};
     int ret = handle_recv(fd2, handlers);
     REQUIRE(ret == 1);
     close(fd1);

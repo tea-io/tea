@@ -1,4 +1,5 @@
 #include "../common/log.h"
+#include "event.h"
 #include "fs.h"
 #include "tcp.h"
 #include <filesystem>
@@ -25,6 +26,6 @@ int main(int argc, char *argv[]) {
     }
     set_debug_log(true);
     log(NONE, banner.c_str());
-    listen(5210, get_handlers(path));
+    listen(5210, get_fs_handlers(path), get_event_handlers());
     return 0;
 };

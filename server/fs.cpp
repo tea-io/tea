@@ -820,9 +820,9 @@ template <typename T> int respons_handler(int sock, int id, T message) {
     return 0;
 }
 
-recv_handlers get_handlers(std::string path) {
+recv_handlers get_fs_handlers(std::string path) {
     base_path = std::filesystem::weakly_canonical(path);
-    return recv_handlers{
+    return recv_handlers{.fs{
         .init_request = init_request,
         .init_response = respons_handler<InitResponse *>,
         .get_attr_request = get_attr_request,
@@ -889,5 +889,5 @@ recv_handlers get_handlers(std::string path) {
         .fallocate_response = respons_handler<FallocateResponse *>,
         .lseek_request = lseek_request,
         .lseek_response = respons_handler<LseekResponse *>,
-    };
+    }};
 }
