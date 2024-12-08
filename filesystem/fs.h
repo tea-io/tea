@@ -7,4 +7,4 @@ struct config {
     bool vim_mode;
 };
 
-fuse_operations get_fuse_operations(int sock, config cfg);
+fuse_operations get_fuse_operations(int sock, int ext_sock, config cfg);
