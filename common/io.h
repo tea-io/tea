@@ -6,9 +6,11 @@
 #include <cstring>
 #include <google/protobuf/message.h>
 
+int listen(int port);
+
 int send_message(int sock, int id, Type type, google::protobuf::Message *message);
 
-struct recv_handlers {
+struct fs_handlers {
     int (*init_request)(int sock, int id, InitRequest *request);
     int (*init_response)(int sock, int id, InitResponse *response);
     int (*get_attr_request)(int sock, int id, GetAttrRequest *request);
@@ -75,6 +77,15 @@ struct recv_handlers {
     int (*fallocate_response)(int sock, int id, FallocateResponse *response);
     int (*lseek_request)(int sock, int id, LseekRequest *request);
     int (*lseek_response)(int sock, int id, LseekResponse *response);
+};
+
+struct event_handlers {
+    int (*cursor_position)(int sock, int id, CursorPosition *request);
+};
+
+union recv_handlers {
+    fs_handlers fs;
+    event_handlers event;
 };
 
 int handle_recv(int sock, recv_handlers &handlers);

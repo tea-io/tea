@@ -26,7 +26,7 @@ template <typename T> int request_handler(int sock, int id, T message) {
     return 0;
 }
 
-recv_handlers handlers = {
+recv_handlers handlers = {.fs{
     .init_request = request_handler<InitRequest *>,
     .init_response = response_handler<InitResponse *>,
     .get_attr_request = request_handler<GetAttrRequest *>,
@@ -93,7 +93,7 @@ recv_handlers handlers = {
     .fallocate_response = response_handler<FallocateResponse *>,
     .lseek_request = request_handler<LseekRequest *>,
     .lseek_response = response_handler<LseekResponse *>,
-};
+}};
 
 int connect(std::string host, int port) {
     int sock;

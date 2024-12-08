@@ -4,15 +4,15 @@ C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs pr
 	-funwind-tables -fasynchronous-unwind-tables -rdynamic -fno-dwarf2-cfi-asm -fvar-tracking-assignments \
 	-Wduplicated-branches -Wduplicated-cond -Wshadow -Wfloat-equal -Wold-style-cast -Wzero-as-null-pointer-constant \
 	-Wuseless-cast -Wextra-semi -Woverloaded-virtual -Wcast-qual -Wstrict-null-sentinel -Wformat-security -Wformat-signedness \
-	-Wmissing-declarations -Wformat=2 -Wlogical-op -Wmissing-include-dirs \
+	-Wmissing-declarations -Wformat=2 -Wlogical-op -Wmissing-include-dirs -Wno-old-style-cast\
 	-Wnull-dereference -Wpointer-arith -Wredundant-decls -Wswitch-enum -Wundef -Wuninitialized -Wwrite-strings -fno-common \
-	-fanalyzer -fanalyzer-transitivity \
+	-fanalyzer -fanalyzer-transitivity -fprofile-exclude-files=/usr/.* -Wno-analyzer-use-of-uninitialized-value \
 	-fsanitize=address,leak,undefined,null,return,signed-integer-overflow -fsanitize-trap=undefined -fno-sanitize-recover=all
 
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=31
 SERVER_FLAGS := 
 COMMON := common/log.cpp common/io.cpp common/header.cpp common/diff.cpp common/hash.cpp
-SERVER_FILES := server/tcp.cpp server/fs.cpp server/ot.cpp
+SERVER_FILES := server/tcp.cpp server/fs.cpp server/ot.cpp server/event.cpp
 FS_FILES := filesystem/tcp.cpp filesystem/fs.cpp filesystem/log.cpp filesystem/local_copy.cpp
 PROTO := proto/messages.proto
 

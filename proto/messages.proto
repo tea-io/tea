@@ -67,6 +67,7 @@ enum Type {
   FALLOCATE_RESPONSE = 63;
   LSEEK_REQUEST = 64;
   LSEEK_RESPONSE = 65;
+  CURSOR_POSITION_EVENT = 66;
 }
 
 message InitRequest { string name = 1; }
@@ -330,4 +331,10 @@ message LseekRequest {
 message LseekResponse {
   int32 error = 1;
   int64 offset = 2;
+}
+
+message CursorPosition {
+  int64 offset = 1;
+  string path = 2;
+  string name = 3;
 }

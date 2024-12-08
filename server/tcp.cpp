@@ -2,6 +2,7 @@
 #include "../common/io.h"
 #include "../common/log.h"
 #include <list>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <thread>
 
@@ -24,33 +25,8 @@ static void client_handler(int fd, recv_handlers handlers) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-fd-leak"
-int listen(int port, recv_handlers handlers) {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        perror("socket");
-        return 1;
-    }
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = INADDR_ANY;
-    constexpr int one = 1;
-    int err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    if (err < 0) {
-        log(ERROR, sock, "Error setting socket options: %s", strerror(errno));
-        return 1;
-    }
-    if (bind(sock, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
-        log(ERROR, sock, "Error bind port: %s", strerror(errno));
-        return 1;
-    }
-    err = listen(sock, 10);
-    if (err < 0) {
-        log(ERROR, sock, "Error listening: %s", strerror(errno));
-        return 1;
-    }
-    log(INFO, sock, "Listening on port %d", port);
-    struct sockaddr_in client_addr;
+static int accept_connections(int sock, recv_handlers handlers) {
+    sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     while (true) {
         const int client_sock = accept(sock, reinterpret_cast<sockaddr *>(&client_addr), &client_addr_len);
@@ -63,9 +39,24 @@ int listen(int port, recv_handlers handlers) {
         std::thread t(client_handler, client_sock, handlers);
         threads.push_back(std::move(t));
     }
-    return 0;
 }
 #pragma GCC diagnostic pop
+
+int listen(int port, recv_handlers fs, recv_handlers event) {
+    int sock = listen(port);
+    if (sock < 0) {
+        return -1;
+    }
+    int notify_sock = listen(port + 1);
+    if (notify_sock < 0) {
+        return -2;
+    }
+    log(INFO, sock, "Listening on ports %d %d", port, port + 1);
+    std::thread t([notify_sock, event] { accept_connections(notify_sock, event); });
+    threads.push_back(std::move(t));
+    accept_connections(sock, fs);
+    return 0;
+}
 
 int close_connections() {
     for (auto &c : clients) {
