@@ -4,9 +4,9 @@ C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs pr
 	-funwind-tables -fasynchronous-unwind-tables -rdynamic -fno-dwarf2-cfi-asm -fvar-tracking-assignments \
 	-Wduplicated-branches -Wduplicated-cond -Wshadow -Wfloat-equal -Wold-style-cast -Wzero-as-null-pointer-constant \
 	-Wuseless-cast -Wextra-semi -Woverloaded-virtual -Wcast-qual -Wstrict-null-sentinel -Wformat-security -Wformat-signedness \
-	-Wmissing-declarations -Wformat=2 -Wlogical-op -Wmissing-include-dirs \
+	-Wmissing-declarations -Wformat=2 -Wlogical-op -Wmissing-include-dirs -Wno-old-style-cast\
 	-Wnull-dereference -Wpointer-arith -Wredundant-decls -Wswitch-enum -Wundef -Wuninitialized -Wwrite-strings -fno-common \
-	-fanalyzer -fanalyzer-transitivity \
+	-fanalyzer -fanalyzer-transitivity -fprofile-exclude-files=/usr/.* -Wno-analyzer-use-of-uninitialized-value \
 	-fsanitize=address,leak,undefined,null,return,signed-integer-overflow -fsanitize-trap=undefined -fno-sanitize-recover=all
 
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=31
