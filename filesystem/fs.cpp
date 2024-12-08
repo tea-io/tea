@@ -9,14 +9,17 @@
 #include <thread>
 
 int sock;
+int ext_sock;
 config cfg;
 std::thread t;
+std::thread ext_thread;
 int fh_iterator;
 
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
     (void)f_cfg;
-    t = std::thread(recv_thread, sock);
+    t = std::thread(recv_therad, sock, handlers::fs(), false, FS);
+    ext_thread = std::thread(accept_connections, ext_sock, handlers::event(), true, EVENT);
     InitRequest req = InitRequest();
     req.set_name(cfg.name);
     InitResponse res;
@@ -34,7 +37,10 @@ static void destroy(void *private_data) {
     (void)private_data;
     google::protobuf::ShutdownProtobufLibrary();
     t.detach();
+    ext_thread.detach();
+    close_connections();
     close(sock);
+    close(ext_sock);
 };
 
 static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_file_info *fi) {
@@ -668,8 +674,9 @@ static off_t lseek_fs(const char *path, off_t offset, int whence, struct fuse_fi
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
+fuse_operations get_fuse_operations(int sock_fd, int ext_sock_fd, config cfg_param) {
     sock = sock_fd;
+    ext_sock = ext_sock_fd;
     cfg = cfg_param;
     fuse_operations ops = {
         .getattr = get_attr_request,

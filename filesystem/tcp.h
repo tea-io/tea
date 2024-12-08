@@ -1,6 +1,6 @@
 #pragma once
-#include "../common/io.h"
 #include "../common/log.h"
+#include "../common/tcp.h"
 #include <condition_variable>
 #include <mutex>
 #include <string>
@@ -12,7 +12,10 @@ extern std::mutex condition_mutex;
 
 int connect(std::string host, int port);
 
-int recv_thread(int sock);
+namespace handlers {
+recv_handlers fs();
+recv_handlers event();
+} // namespace handlers
 
 template <typename T> int request_response(int sock, google::protobuf::Message &request, T *response, Type type) {
     int id = ++requst_id;

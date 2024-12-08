@@ -11,7 +11,7 @@ C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs pr
 
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=31
 SERVER_FLAGS := 
-COMMON := common/log.cpp common/io.cpp common/header.cpp common/diff.cpp common/hash.cpp
+COMMON := common/log.cpp common/tcp.cpp common/header.cpp common/diff.cpp common/hash.cpp common/handlers.cpp
 SERVER_FILES := server/tcp.cpp server/fs.cpp server/ot.cpp server/event.cpp
 FS_FILES := filesystem/tcp.cpp filesystem/fs.cpp filesystem/log.cpp filesystem/local_copy.cpp
 PROTO := proto/messages.proto
@@ -32,7 +32,7 @@ clean: filesystem-clean server-clean proto-clean test-clean
 
 .PHONY: filesystem-run
 filesystem-run: filesystem 
-	./filesystem/filesystem --host=127.0.0.1 -f -v mount-dir/
+	./filesystem/filesystem --host=127.0.0.1 -e=5212 -f -v mount-dir/
 
 .PHONY: filesystem 
 filesystem: filesystem/filesystem

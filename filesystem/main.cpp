@@ -19,24 +19,35 @@ std::string banner = R"(
 static struct options {
     const char *host;
     int port;
+    int extension_port;
     bool show_help;
     const char *name;
     bool vim_mode;
 } opts;
 
 #define OPTION(t, p) {t, offsetof(struct options, p), 1}
-static const struct fuse_opt option_spec[] = {
-    OPTION("--host=%s", host), OPTION("-h=%s", host), OPTION("--port=%d", port), OPTION("-p=%d", port),  OPTION("--help", show_help),
-    OPTION("--name=%s", name), OPTION("-n=%s", name), OPTION("--vim", vim_mode), OPTION("-v", vim_mode), FUSE_OPT_END};
+static const struct fuse_opt option_spec[] = {OPTION("--host=%s", host),
+                                              OPTION("-h=%s", host),
+                                              OPTION("--port=%d", port),
+                                              OPTION("-p=%d", port),
+                                              OPTION("--extension-port=%d", extension_port),
+                                              OPTION("-e=%d", extension_port),
+                                              OPTION("--help", show_help),
+                                              OPTION("--name=%s", name),
+                                              OPTION("-n=%s", name),
+                                              OPTION("--vim", vim_mode),
+                                              OPTION("-v", vim_mode),
+                                              FUSE_OPT_END};
 
 static void show_help(char *progname) {
     log(NONE, "usage: %s [options] <mountpoint>\n\n", progname);
     log(NONE, "File-system specific options:\n"
-              "    -h   --host=<s>      The host of server (required)\n"
-              "    -p   --port=<d>      The port of server (default: 5210)\n"
-              "    -n   --name=<s>      The display name of user (default: login name)\n"
-              "    -v   --vim           Enable vim mode\n"
-              "    --help               Print this help\n");
+              "    -h   --host=<s>                The host of server (required)\n"
+              "    -p   --port=<d>                The port of server (default: 5210)\n"
+              "    -e   --extension-port=<d>      The port of server (default: 5211)\n"
+              "    -n   --name=<s>                The display name of user (default: login name)\n"
+              "    -v   --vim                     Enable vim mode\n"
+              "    --help                         Print this help\n");
 }
 
 static void cleanup_routine(fuse_args *args, const int sock_fd) {
@@ -57,6 +68,7 @@ int main(int argc, char *argv[]) {
         login = strdup(unknown.c_str());
     }
     opts.port = 5210;
+    opts.extension_port = 5211;
     opts.name = strdup(login);
     opts.host = NULL;
     opts.vim_mode = false;
@@ -66,6 +78,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     int sock = -1;
+    int ext_sock = -1;
     if (opts.show_help) {
         show_help(args.argv[0]);
         assert(fuse_opt_add_arg(&args, "--help") == 0);
@@ -83,11 +96,18 @@ int main(int argc, char *argv[]) {
             cleanup_routine(&args, sock);
             return 1;
         }
+
+        ext_sock = listen(opts.extension_port);
+        log(INFO, ext_sock, "Listen on port %d", opts.extension_port);
+        if (ext_sock < 0) {
+            cleanup_routine(&args, sock);
+            return 1;
+        }
     }
 
     config cfg = {.name = opts.name, .vim_mode = opts.vim_mode};
 
-    struct fuse_operations oper = get_fuse_operations(sock, cfg);
+    struct fuse_operations oper = get_fuse_operations(sock, ext_sock, cfg);
 
     int ret = fuse_main(args.argc, args.argv, &oper, NULL);
 

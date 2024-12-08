@@ -1,14 +1,8 @@
 #pragma once
 #include "../proto/messages.pb.h"
-#include <arpa/inet.h>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <google/protobuf/message.h>
+#include "header.h"
 
-int listen(int port);
-
-int send_message(int sock, int id, Type type, google::protobuf::Message *message);
+enum socket_type { FS, EVENT };
 
 struct fs_handlers {
     int (*init_request)(int sock, int id, InitRequest *request);
@@ -81,6 +75,8 @@ struct fs_handlers {
 
 struct event_handlers {
     int (*cursor_position)(int sock, int id, CursorPosition *request);
+    int (*diff_write_enable)(int sock, int id, DiffWriteEnable *request);
+    int (*diff_write_disable)(int sock, int id, DiffWriteDisable *request);
 };
 
 union recv_handlers {
@@ -88,6 +84,5 @@ union recv_handlers {
     event_handlers event;
 };
 
-int handle_recv(int sock, recv_handlers &handlers);
-
-int full_read(int fd, char &buf, int size);
+int event_handle_recv(int sock, Header *header, char *recv_buffer, event_handlers &handlers, bool json);
+int fs_handle_recv(int sock, Header *header, char *recv_buffer, fs_handlers &handlers, bool json);
