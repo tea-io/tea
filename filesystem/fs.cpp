@@ -18,8 +18,8 @@ int fh_iterator;
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
     (void)f_cfg;
-    t = std::thread(recv_thread_proto, sock);
-    ext_thread = std::thread(recv_thread_json, ext_sock);
+    t = std::thread(recv_thread, sock, false, FS);
+    ext_thread = std::thread(recv_thread, ext_sock, true, EVENT);
     InitRequest req = InitRequest();
     req.set_name(cfg.name);
     InitResponse res;

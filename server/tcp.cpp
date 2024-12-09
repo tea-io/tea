@@ -11,7 +11,7 @@ std::list<int> clients;
 
 static void client_handler(int fd, recv_handlers handlers) {
     while (true) {
-        int err = handle_recv(fd, handlers);
+        int err = handle_recv(fd, handlers, false, FS);
         if (err < 0) {
             log(ERROR, fd, "Error handling message");
         }

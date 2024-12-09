@@ -392,13 +392,13 @@ static int event_handle_recv(int sock, Header *header, char *recv_buffer, event_
         ret = recv_handler_caller<CursorPosition>(recv_buffer, header, sock, handlers.cursor_position, json);
         break;
     }
-    case Type::WRITE_LOCK_REQUEST: {
-        ret = recv_handler_caller<WriteLockRequest>(recv_buffer, header, sock, handlers.write_lock_request, json);
+    case Type::DIFF_WRITE_ENABLE_EVENT: {
+        ret = recv_handler_caller<DiffWriteEnable>(recv_buffer, header, sock, handlers.diff_write_enable, json);
         log(DEBUG, sock, "Received write lock request");
         break;
     }
-    case Type::WRITE_UNLOCK_REQUEST: {
-        ret = recv_handler_caller<WriteUnlockRequest>(recv_buffer, header, sock, handlers.write_unlock_request, json);
+    case Type::DIFF_WRITE_DISABLE_EVENT: {
+        ret = recv_handler_caller<DiffWriteDisable>(recv_buffer, header, sock, handlers.diff_write_disable, json);
         log(DEBUG, sock, "Received write unlock request");
         break;
     }
@@ -416,7 +416,7 @@ static int event_handle_recv(int sock, Header *header, char *recv_buffer, event_
     return ret;
 }
 
-int handle_recv(int sock, recv_handlers &handlers, bool json) {
+int handle_recv(int sock, recv_handlers &handlers, bool json, socket_type type) {
     char buffer[HEADER_SIZE];
     int recived = full_read(sock, *buffer, sizeof(buffer));
     if (recived == 0) {
@@ -438,14 +438,17 @@ int handle_recv(int sock, recv_handlers &handlers, bool json) {
         return -1;
     }
     int ret = -3;
-    if (handlers.fs.init_request) {
+    switch (type) {
+    case FS: {
         ret = fs_handle_recv(sock, header, recv_buffer, handlers.fs, json);
-    } else if (handlers.event.cursor_position) {
+        break;
+    }
+    case EVENT: {
         ret = event_handle_recv(sock, header, recv_buffer, handlers.event, json);
+        break;
+    }
     }
     delete header;
     delete[] recv_buffer;
     return ret;
 };
-
-int handle_recv(int sock, recv_handlers &handlers) { return handle_recv(sock, handlers, false); };

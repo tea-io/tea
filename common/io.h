@@ -81,8 +81,8 @@ struct fs_handlers {
 
 struct event_handlers {
     int (*cursor_position)(int sock, int id, CursorPosition *request);
-    int (*write_lock_request)(int sock, int id, WriteLockRequest *request);
-    int (*write_unlock_request)(int sock, int id, WriteUnlockRequest *request);
+    int (*diff_write_enable)(int sock, int id, DiffWriteEnable *request);
+    int (*diff_write_disable)(int sock, int id, DiffWriteDisable *request);
 };
 
 union recv_handlers {
@@ -90,7 +90,8 @@ union recv_handlers {
     event_handlers event;
 };
 
-int handle_recv(int sock, recv_handlers &handlers);
-int handle_recv(int sock, recv_handlers &handlers, bool json);
+enum socket_type { FS, EVENT };
+
+int handle_recv(int sock, recv_handlers &handlers, bool json, socket_type type);
 
 int full_read(int fd, char &buf, int size);

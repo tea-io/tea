@@ -12,8 +12,7 @@ extern std::mutex condition_mutex;
 
 int connect(std::string host, int port);
 
-int recv_thread_proto(int sock);
-int recv_thread_json(int sock);
+int recv_thread(int sock, bool json, socket_type type);
 
 template <typename T> int request_response(int sock, google::protobuf::Message &request, T *response, Type type) {
     int id = ++requst_id;
