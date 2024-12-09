@@ -38,25 +38,40 @@ int listen(int port) {
     return sock;
 }
 
-int send_message(int sock, int id, Type type, google::protobuf::Message *body) {
+int send_message(int sock, int id, Type type, google::protobuf::Message *body, bool json) {
     Header header;
     header.size = body->ByteSizeLong();
     header.id = id;
     header.type = type;
 
     char *header_buffer = serialize(&header);
-    char *message_buffer = new char[HEADER_SIZE + body->ByteSizeLong()];
-    memcpy(message_buffer, header_buffer, HEADER_SIZE);
-    delete[] header_buffer;
+    char *message_buffer;
+    if (json) {
+        std::string request;
+        absl::Status status = google::protobuf::util::MessageToJsonString(*body, &request);
+        if (!status.ok()) {
+            log(DEBUG, sock, "(%d) Serialize body failed: %s", id, status.message());
+            return -1;
+        }
+        message_buffer = new char[HEADER_SIZE + request.size()];
+        memcpy(message_buffer, header_buffer, HEADER_SIZE);
+        delete[] header_buffer;
+        memcpy(message_buffer + HEADER_SIZE, request.c_str(), request.size());
+    } else {
+        message_buffer = new char[HEADER_SIZE + body->ByteSizeLong()];
+        memcpy(message_buffer, header_buffer, HEADER_SIZE);
+        delete[] header_buffer;
 
-    char *body_buffer = new char[body->ByteSizeLong()];
-    bool err = body->SerializeToArray(body_buffer, body->ByteSizeLong());
-    if (!err) {
-        log(DEBUG, sock, "(%d) Serialize body failed", id);
-        return -1;
+        char *body_buffer = new char[body->ByteSizeLong()];
+        bool err = body->SerializeToArray(body_buffer, body->ByteSizeLong());
+
+        if (!err) {
+            log(DEBUG, sock, "(%d) Serialize body failed", id);
+            return -1;
+        }
+        memcpy(message_buffer + HEADER_SIZE, body_buffer, body->ByteSizeLong());
+        delete[] body_buffer;
     }
-    memcpy(message_buffer + HEADER_SIZE, body_buffer, body->ByteSizeLong());
-    delete[] body_buffer;
 
     int len = send(sock, message_buffer, HEADER_SIZE + body->ByteSizeLong(), 0);
     delete[] message_buffer;
@@ -68,6 +83,8 @@ int send_message(int sock, int id, Type type, google::protobuf::Message *body) {
     log(DEBUG, sock, "(%d) Send message success: %s - %d bytes", id, debug.c_str(), len);
     return len;
 }
+
+int send_message(int sock, int id, Type type, google::protobuf::Message *body) { return send_message(sock, id, type, body, false); }
 
 int full_read(int fd, char &buf, int size) {
     int recived = 0;

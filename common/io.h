@@ -9,6 +9,7 @@
 int listen(int port);
 
 int send_message(int sock, int id, Type type, google::protobuf::Message *message);
+int send_message(int sock, int id, Type type, google::protobuf::Message *message, bool json);
 
 struct fs_handlers {
     int (*init_request)(int sock, int id, InitRequest *request);
