@@ -1,7 +1,5 @@
 #include "diff.h"
-#include "../lib/dtl/dtl/dtl.hpp"
-
-#include <algorithm>
+#include <dtl/dtl.hpp>
 
 std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     std::vector<WriteRequest> diffs;
@@ -14,7 +12,7 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     auto s = d.getSes().getSequence();
     auto type = dtl::SES_COMMON;
 
-    for (int i = 0; i < s.size(); i++) {
+    for (unsigned long int i = 0; i < s.size(); i++) {
         const auto &elem = s[i];
 
         if (elem.second.type == dtl::SES_COMMON) {
