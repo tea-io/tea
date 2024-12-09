@@ -1,7 +1,7 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-dereference"
 #include "diff.h"
 #include <dtl/dtl.hpp>
-
-#include <algorithm>
 
 std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     std::vector<WriteRequest> diffs;
@@ -14,7 +14,7 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     auto s = d.getSes().getSequence();
     auto type = dtl::SES_COMMON;
 
-    for (int i = 0; i < s.size(); i++) {
+    for (unsigned long int i = 0; i < s.size(); i++) {
         const auto &elem = s[i];
 
         if (elem.second.type == dtl::SES_COMMON) {
@@ -23,7 +23,7 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
 
         if (elem.second.type != type || offset == -1) {
             if (!agg.empty()) {
-                WriteRequest wr;
+                WriteRequest wr = WriteRequest();
                 wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
                 wr.set_data(agg);
                 wr.set_offset(offset);
@@ -39,7 +39,7 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     }
 
     if (!agg.empty()) {
-        WriteRequest wr;
+        WriteRequest wr = WriteRequest();
         wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
         wr.set_data(agg);
         wr.set_offset(offset);
@@ -49,3 +49,4 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
 
     return diffs;
 }
+#pragma GCC diagnostic pop

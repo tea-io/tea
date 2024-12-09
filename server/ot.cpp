@@ -56,6 +56,9 @@ static int delete_replace(WriteRequest *bef, WriteRequest *req) {
     return 0;
 }
 
+// ignore wswitch-enum
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
 int transform(WriteRequest *req, WriteRequest *bef) {
     switch (bef->flag()) {
     case REPLACE:
@@ -77,3 +80,4 @@ int transform(WriteRequest *req, WriteRequest *bef) {
         return 0;
     }
 }
+#pragma GCC diagnostic pop

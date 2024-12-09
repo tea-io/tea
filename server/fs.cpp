@@ -634,11 +634,11 @@ static int releasedir_fs(int sock, int id, ReleasedirRequest *req) {
     } else {
         dirs.erase(path);
         err = closedir(dir);
-    }
-    if (err < 0) {
-        res.set_error(errno);
-    } else {
-        res.set_error(0);
+        if (err < 0) {
+            res.set_error(errno);
+        } else {
+            res.set_error(0);
+        }
     }
     err = send_message(sock, id, Type::RELEASEDIR_RESPONSE, &res);
     if (err < 0) {
