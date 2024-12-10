@@ -68,6 +68,8 @@ enum Type {
   LSEEK_REQUEST = 64;
   LSEEK_RESPONSE = 65;
   CURSOR_POSITION_EVENT = 66;
+  DIFF_WRITE_ENABLE_EVENT = 67;
+  DIFF_WRITE_DISABLE_EVENT = 68;
 }
 
 message InitRequest { string name = 1; }
@@ -338,3 +340,7 @@ message CursorPosition {
   string path = 2;
   string name = 3;
 }
+
+message DiffWriteEnable { string path = 1; }
+
+message DiffWriteDisable { string path = 1; }
