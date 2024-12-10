@@ -1,5 +1,5 @@
 #include "diff.h"
-#include "../lib/dtl/dtl/dtl.hpp"
+#include <dtl/dtl.hpp>
 
 #include <algorithm>
 
