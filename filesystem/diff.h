@@ -6,6 +6,11 @@
 
 #include "../proto/messages.pb.h"
 
+<<<<<<< HEAD
+=======
+    std::vector<WriteOperation>
+    diff(const std::string &e, const std::string &f, size_t offset);
+>>>>>>> 19b3788 ([#147] adapt some function to diff write)
 std::vector<WriteOperation> diff(const std::string &e, const std::string &f);
 
 void enable_diff(std::string file);

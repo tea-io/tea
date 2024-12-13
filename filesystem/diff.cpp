@@ -1,17 +1,20 @@
 #include "diff.h"
+#include "../common/log.h"
 #include <dtl/dtl.hpp>
 
 std::map<std::string, short> diff_mode_files;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-dereference"
-std::vector<WriteOperation> diff(const std::string &e, const std::string &f) {
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f) { return diff(e, f, 0); }
+
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f, size_t offset) {
     std::vector<WriteOperation> diffs;
 
     dtl::Diff<char, std::string> d(e, f);
     d.compose();
 
-    int offset = -1;
+    int local_offset = -1;
     std::string agg;
     auto s = d.getSes().getSequence();
     auto type = dtl::SES_COMMON;
@@ -23,17 +26,21 @@ std::vector<WriteOperation> diff(const std::string &e, const std::string &f) {
             continue;
         }
 
-        if (elem.second.type != type || offset == -1) {
+        if (elem.second.type != type || local_offset == -1) {
             if (!agg.empty()) {
                 WriteOperation wr = WriteOperation();
                 wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
                 wr.set_data(agg);
-                wr.set_offset(offset);
+                wr.set_offset(local_offset + offset);
                 wr.set_size(agg.size());
                 diffs.push_back(wr);
             }
 
-            offset = i;
+            if (elem.second.type == dtl::SES_ADD) {
+                local_offset = elem.second.afterIdx - 1;
+            } else {
+                local_offset = elem.second.beforeIdx - 1;
+            }
             agg.clear();
             type = elem.second.type;
         }
@@ -44,7 +51,7 @@ std::vector<WriteOperation> diff(const std::string &e, const std::string &f) {
         WriteOperation wr = WriteOperation();
         wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
         wr.set_data(agg);
-        wr.set_offset(offset);
+        wr.set_offset(local_offset + offset);
         wr.set_size(agg.size());
         diffs.push_back(wr);
     }

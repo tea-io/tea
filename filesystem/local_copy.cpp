@@ -4,50 +4,41 @@
 #include <map>
 #include <string>
 
-std::map<int, std::string> copies_store;
+std::map<std::string, std::string> copies_store;
 
-void init_local_copy(int fd) { copies_store[fd] = ""; }
-
-void discard_local_copy(int fd) {
-    if (const auto copy = copies_store.find(fd); copy != copies_store.end()) {
-        copies_store.erase(copy);
-        log(DEBUG, "Discarded local copy for fd %d", fd);
-    } else {
-        log(DEBUG, "Local copy for fd %d not found. Ignoring...", fd);
-    }
-}
-
-void patch_local_copy(int fd, const char *data, size_t size, size_t offset) {
-    const auto copy = copies_store.find(fd);
+void patch_copy(std::string path, const char *data, size_t size, size_t offset) {
+    auto copy = copies_store.find(path);
     if (copy == copies_store.end()) {
-        // This should never happen, but just in case we will write it to the local copy
-        log(DEBUG, "Local copy for fd %d not found. Creating a new one...", fd);
-        init_local_copy(fd);
+        log(DEBUG, "Creating a new copy for %s ...", path.c_str());
+        copies_store[path] = "";
+        copy = copies_store.find(path);
     }
 
     auto &local_copy = copy->second;
-    local_copy.resize(std::max(local_copy.length(), offset + size - 1));
+    local_copy.resize(offset + size - 1);
 
     std::copy_n(data, size, local_copy.begin() + offset);
 }
 
-void truncate_local_copy(int fd, size_t size) {
-    if (auto copy = copies_store.find(fd); copy != copies_store.end()) {
+void truncate_copy(std::string path, size_t size) {
+    if (auto copy = copies_store.find(path); copy != copies_store.end()) {
         copy->second.resize(size);
     } else {
-        log(DEBUG, "Local copy for fd %lu not found.", fd);
+        copies_store[path] = "";
+        copies_store[path].resize(size);
+        log(DEBUG, "Creating a new copy for %s ...", path.c_str());
     }
 }
 
-std::string get_local_copy(int fd) {
-    if (const auto copy = copies_store.find(fd); copy != copies_store.end()) {
+std::string get_copy(std::string path) {
+    if (const auto copy = copies_store.find(path); copy != copies_store.end()) {
         return copy->second;
     }
     return "";
 }
 
-std::string get_local_copy(int fd, size_t size, size_t offset) {
-    std::string copy = get_local_copy(fd);
+std::string get_copy(std::string path, size_t size, size_t offset) {
+    std::string copy = get_copy(path);
     if (offset >= copy.size()) {
         return "";
     }
@@ -56,3 +47,5 @@ std::string get_local_copy(int fd, size_t size, size_t offset) {
     }
     return copy.substr(offset, size);
 }
+
+void discard_copy(std::string path) { copies_store.erase(path); }

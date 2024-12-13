@@ -13,7 +13,6 @@ int ext_sock;
 config cfg;
 std::thread t;
 std::thread ext_thread;
-int fh_iterator;
 
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
@@ -76,7 +75,6 @@ static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_fi
 };
 
 static int open_fs(const char *path, struct fuse_file_info *fi) {
-    fi->fh = fh_iterator++;
     OpenRequest req = OpenRequest();
     req.set_path(path);
     req.set_flags(fi->flags);
@@ -88,8 +86,6 @@ static int open_fs(const char *path, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to open file: %d", res.error());
     }
-    init_local_copy(fi->fh);
-
     return -res.error();
 };
 
@@ -129,6 +125,7 @@ static int readdir_fs(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 };
 
 static int read_fs(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    (void)fi;
     ReadRequest req = ReadRequest();
     req.set_path(path);
     req.set_size(size);
@@ -145,7 +142,7 @@ static int read_fs(const char *path, char *buf, size_t size, off_t offset, struc
         return -res.error();
     }
     memcpy(buf, res.data().c_str(), res.data().size());
-    patch_local_copy(fi->fh, buf, res.data().size(), offset);
+    patch_copy(path, buf, res.data().size(), offset);
     return res.data().size();
 };
 
@@ -172,7 +169,7 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
 };
 
 static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
-    fi->fh = fh_iterator++;
+    (void)fi;
     CreateRequest req = CreateRequest();
     req.set_path(path);
     req.set_mode(mode);
@@ -184,7 +181,6 @@ static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to create file: %d", res.error());
     }
-    init_local_copy(fi->fh);
     return -res.error();
 };
 
@@ -286,6 +282,7 @@ static int truncate_fs(const char *path, off_t size, struct fuse_file_info *fi) 
     } else {
         log(INFO, sock, "Try to truncate: %d", res.error());
     }
+    truncate_copy(path, size);
     return -res.error();
 }
 
@@ -386,7 +383,7 @@ static int statfs(const char *path, struct statvfs *stbuf) {
 
 static int flush_fs(const char *path, struct fuse_file_info *fi) {
     (void)path;
-    discard_local_copy(fi->fh);
+    (void)fi;
     return 0;
 };
 
@@ -442,7 +439,7 @@ static int getxattr_fs(const char *path, const char *name, char *value, size_t s
         return -ERANGE;
     }
     memcpy(value, res.value().c_str(), res.value().size());
-    return res.value().size();
+    return 0;
 };
 
 static int listxattr_fs(const char *path, char *list, size_t size) {

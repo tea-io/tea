@@ -47,6 +47,7 @@ TEST_CASE("Diff algorithm") {
         REQUIRE(diffs[0].flag() == APPEND);
         REQUIRE(diffs[0].data() == "123");
         REQUIRE(diffs[0].size() == 3);
+        REQUIRE(diffs[0].offset() == 2);
     }
 
     SECTION("Delete in the middle") {
@@ -56,6 +57,7 @@ TEST_CASE("Diff algorithm") {
         REQUIRE(diffs[0].flag() == DELETE);
         REQUIRE(diffs[0].data() == "cde");
         REQUIRE(diffs[0].size() == 3);
+        REQUIRE(diffs[0].offset() == 2);
     }
 
     SECTION("Trim from text start") {
@@ -65,6 +67,7 @@ TEST_CASE("Diff algorithm") {
         REQUIRE(diffs[0].flag() == DELETE);
         REQUIRE(diffs[0].data() == "abcd");
         REQUIRE(diffs[0].size() == 4);
+        REQUIRE(diffs[0].offset() == 0);
     }
 
     SECTION("Trim from text end") {
@@ -74,6 +77,20 @@ TEST_CASE("Diff algorithm") {
         REQUIRE(diffs[0].flag() == DELETE);
         REQUIRE(diffs[0].data() == "defg");
         REQUIRE(diffs[0].size() == 4);
+        REQUIRE(diffs[0].offset() == 3);
+    }
+
+    SECTION("Replace") {
+        std::vector<WriteOperation> diffs = diff("123abc789", "123456789");
+        REQUIRE(diffs.size() == 2);
+        REQUIRE(diffs[0].flag() == DELETE);
+        REQUIRE(diffs[0].data() == "abc");
+        REQUIRE(diffs[0].size() == 3);
+        REQUIRE(diffs[0].offset() == 3);
+        REQUIRE(diffs[1].flag() == APPEND);
+        REQUIRE(diffs[1].data() == "456");
+        REQUIRE(diffs[1].size() == 3);
+        REQUIRE(diffs[1].offset() == 3);
     }
 }
 
