@@ -1,6 +1,7 @@
 #include "tcp.h"
 #include "../common/log.h"
 #include "../common/tcp.h"
+#include "diff.h"
 #include <condition_variable>
 #include <google/protobuf/message.h>
 #include <string>
@@ -100,8 +101,8 @@ recv_handlers handlers::fs() {
 recv_handlers handlers::event() {
     return {.event{
         .cursor_position = empty_handler<CursorPosition *>,
-        .diff_write_enable = empty_handler<DiffWriteEnable *>,
-        .diff_write_disable = empty_handler<DiffWriteDisable *>,
+        .diff_write_enable = diff_enable_handler,
+        .diff_write_disable = diff_disable_handler,
     }};
     ;
 }

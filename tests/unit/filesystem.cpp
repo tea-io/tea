@@ -16,3 +16,4 @@ TEST_CASE("local_copy") {
     REQUIRE(get_local_copy(1).compare(expected) == 0);
     discard_local_copy(1);
 }
+

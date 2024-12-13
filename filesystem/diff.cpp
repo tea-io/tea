@@ -1,8 +1,10 @@
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wanalyzer-null-dereference"
 #include "diff.h"
 #include <dtl/dtl.hpp>
 
+std::map<std::string, short> diff_mode_files;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-dereference"
 std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     std::vector<WriteRequest> diffs;
 
@@ -50,3 +52,43 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     return diffs;
 }
 #pragma GCC diagnostic pop
+
+int diff_enable_handler(int sock, int id, DiffWriteEnable *event) {
+    (void)sock;
+    (void)id;
+    enable_diff(event->path());
+    return 0;
+}
+
+int diff_disable_handler(int sock, int id, DiffWriteDisable *event) {
+    (void)sock;
+    (void)id;
+    disable_diff(event->path());
+    return 0;
+}
+
+void enable_diff(std::string file) {
+    if (diff_mode_files.find(file) == diff_mode_files.end()) {
+        diff_mode_files[file] = 1;
+    } else {
+        diff_mode_files[file]++;
+    }
+}
+
+void disable_diff(std::string file) {
+    if (diff_mode_files.find(file) != diff_mode_files.end()) {
+        diff_mode_files[file]--;
+        if (diff_mode_files[file] == 0) {
+            diff_mode_files.erase(file);
+        }
+    } else {
+        diff_mode_files[file] = 0;
+    }
+}
+
+bool is_diff_enabled(std::string file) {
+    if (diff_mode_files.find(file) == diff_mode_files.end()) {
+        return false;
+    }
+    return diff_mode_files[file] > 0;
+}

@@ -11,9 +11,9 @@ C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs pr
 
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=31
 SERVER_FLAGS := 
-COMMON := common/log.cpp common/tcp.cpp common/header.cpp common/diff.cpp common/hash.cpp common/handlers.cpp
+COMMON := common/log.cpp common/tcp.cpp common/header.cpp common/hash.cpp common/handlers.cpp
 SERVER_FILES := server/tcp.cpp server/fs.cpp server/ot.cpp server/event.cpp
-FS_FILES := filesystem/tcp.cpp filesystem/fs.cpp filesystem/log.cpp filesystem/local_copy.cpp
+FS_FILES := filesystem/tcp.cpp filesystem/fs.cpp filesystem/log.cpp filesystem/local_copy.cpp filesystem/diff.cpp
 PROTO := proto/messages.proto
 
 UNIT_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --libs protobuf` -pthread `pkg-config --cflags catch2-with-main`

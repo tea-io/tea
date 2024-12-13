@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
-#include "../../common/diff.h"
+#include "../../filesystem/diff.h"
 
 TEST_CASE("Diff algorithm") {
     SECTION("Empty diff") {
@@ -75,4 +75,18 @@ TEST_CASE("Diff algorithm") {
         REQUIRE(diffs[0].data() == "defg");
         REQUIRE(diffs[0].size() == 4);
     }
+}
+
+TEST_CASE("toggle diff"){
+    std::string path = "test";
+    enable_diff(path);
+    REQUIRE(is_diff_enabled(path));
+    enable_diff(path);
+    REQUIRE(is_diff_enabled(path));
+    disable_diff(path);
+    REQUIRE(is_diff_enabled(path));
+    disable_diff(path);
+    REQUIRE(!is_diff_enabled(path));
+    disable_diff(path);
+    REQUIRE(!is_diff_enabled(path));
 }
