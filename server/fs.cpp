@@ -170,17 +170,18 @@ static int write_request(int sock, int id, WriteRequest *req) {
     if (fd < 0) {
         res.set_error(EBADF);
     }
-    int err = lseek(fd, req->offset(), SEEK_SET);
-    if (err >= 0) {
-        err = write(fd, req->data().c_str(), req->data().size());
+    res.set_error(0);
+    for (int i = 0; i < req->operations_size(); i++) {
+        WriteOperation *op = req->mutable_operations(i);
+        int err = lseek(fd, op->offset(), SEEK_SET);
+        if (err >= 0) {
+            err = write(fd, op->data().c_str(), op->data().size());
+        }
+        if (err < 0) {
+            res.set_error(errno);
+        }
     }
-    if (err < 0) {
-        res.set_error(errno);
-    } else {
-        res.set_error(0);
-        res.set_size(err);
-    }
-    err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
+    int err = send_message(sock, id, Type::WRITE_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }

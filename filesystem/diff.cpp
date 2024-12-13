@@ -5,8 +5,8 @@ std::map<std::string, short> diff_mode_files;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-dereference"
-std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
-    std::vector<WriteRequest> diffs;
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f) {
+    std::vector<WriteOperation> diffs;
 
     dtl::Diff<char, std::string> d(e, f);
     d.compose();
@@ -25,7 +25,7 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
 
         if (elem.second.type != type || offset == -1) {
             if (!agg.empty()) {
-                WriteRequest wr = WriteRequest();
+                WriteOperation wr = WriteOperation();
                 wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
                 wr.set_data(agg);
                 wr.set_offset(offset);
@@ -41,7 +41,7 @@ std::vector<WriteRequest> diff(const std::string &e, const std::string &f) {
     }
 
     if (!agg.empty()) {
-        WriteRequest wr = WriteRequest();
+        WriteOperation wr = WriteOperation();
         wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
         wr.set_data(agg);
         wr.set_offset(offset);

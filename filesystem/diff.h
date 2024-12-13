@@ -6,7 +6,7 @@
 
 #include "../proto/messages.pb.h"
 
-std::vector<WriteRequest> diff(const std::string &e, const std::string &f);
+std::vector<WriteOperation> diff(const std::string &e, const std::string &f);
 
 void enable_diff(std::string file);
 void disable_diff(std::string file);
