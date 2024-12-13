@@ -32,7 +32,7 @@ clean: filesystem-clean server-clean proto-clean test-clean
 
 .PHONY: filesystem-run
 filesystem-run: filesystem 
-	./filesystem/filesystem --host=127.0.0.1 -e=5212 -f -v mount-dir/
+	./filesystem/filesystem --host=127.0.0.1 -f -v mount-dir/
 
 .PHONY: filesystem 
 filesystem: filesystem/filesystem

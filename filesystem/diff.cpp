@@ -1,5 +1,4 @@
 #include "diff.h"
-#include "../common/log.h"
 #include <dtl/dtl.hpp>
 
 std::map<std::string, short> diff_mode_files;

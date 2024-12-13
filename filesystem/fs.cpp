@@ -1,13 +1,13 @@
 #include "fs.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
+#include "diff.h"
 #include "local_copy.h"
 #include "tcp.h"
 #include <cstring>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 #include <thread>
-
 int sock;
 int ext_sock;
 config cfg;
@@ -71,13 +71,20 @@ static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_fi
     if (res.gown()) {
         stbuf->st_gid = getgid();
     }
-    return -res.error();
+    if (res.error() == 0) {
+        return 0;
+    }
+    return -1;
 };
 
 static int open_fs(const char *path, struct fuse_file_info *fi) {
     OpenRequest req = OpenRequest();
     req.set_path(path);
-    req.set_flags(fi->flags);
+    if (is_diff_enabled(path)) {
+        req.set_flags(fi->flags & ~O_TRUNC);
+    } else {
+        req.set_flags(fi->flags);
+    }
     OpenResponse res;
     int err = request_response<OpenResponse>(sock, req, &res, OPEN_REQUEST);
     if (err < 0) {
@@ -150,10 +157,15 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
     (void)fi;
     WriteRequest req = WriteRequest();
     req.set_path(path);
-    WriteOperation *op = req.add_operations();
-    op->set_flag(COMMON);
-    op->set_offset(offset);
-    op->set_data(buf, size);
+    if (is_diff_enabled(path)) {
+        auto operations = diff(get_copy(path), std::string(buf, size), offset);
+        req.mutable_operations()->Assign(operations.begin(), operations.end());
+    } else {
+        WriteOperation *op = req.add_operations();
+        op->set_flag(COMMON);
+        op->set_offset(offset);
+        op->set_data(buf, size);
+    }
     WriteResponse res;
     int err = request_response<WriteResponse>(sock, req, &res, WRITE_REQUEST);
     if (err < 0) {
@@ -439,7 +451,7 @@ static int getxattr_fs(const char *path, const char *name, char *value, size_t s
         return -ERANGE;
     }
     memcpy(value, res.value().c_str(), res.value().size());
-    return 0;
+    return res.value().size();
 };
 
 static int listxattr_fs(const char *path, char *list, size_t size) {
