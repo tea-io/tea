@@ -228,6 +228,9 @@ static int write_delete(int fd, WriteOperation *op) {
         return -errno;
     }
     int size = st.st_size - op->offset() - op->size();
+    if (size < 0) {
+        size = 0;
+    }
     std::unique_ptr<char[]> buf(new char[size]);
     if (size > 0) {
         err = lseek(fd, op->offset() + op->size(), SEEK_SET);
