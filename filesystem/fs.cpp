@@ -13,6 +13,7 @@ int ext_sock;
 config cfg;
 std::thread t;
 std::thread ext_thread;
+int init_time;
 
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
@@ -29,6 +30,7 @@ static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     } else {
         log(INFO, sock, "The file system was initiated", res.error());
     }
+    init_time = time(NULL);
     return NULL;
 };
 
@@ -64,6 +66,10 @@ static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_fi
         stbuf->st_atime = res.atime();
         stbuf->st_mtime = res.mtime();
         stbuf->st_ctime = res.ctime();
+    } else {
+        stbuf->st_atime = init_time;
+        stbuf->st_mtime = init_time;
+        stbuf->st_ctime = init_time;
     }
     if (res.own()) {
         stbuf->st_uid = getuid();
