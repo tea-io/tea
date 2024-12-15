@@ -172,6 +172,7 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
         op->set_offset(offset);
         op->set_data(buf, size);
     }
+    log(ERROR, sock, "%s", req.DebugString().c_str());
     WriteResponse res;
     int err = request_response<WriteResponse>(sock, req, &res, WRITE_REQUEST);
     if (err < 0) {

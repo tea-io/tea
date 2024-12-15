@@ -1,5 +1,6 @@
 #include "diff.h"
 #include <dtl/dtl.hpp>
+#include "../common/log.h"
 
 std::map<std::string, short> diff_mode_files;
 
@@ -21,12 +22,8 @@ std::vector<WriteOperation> diff(const std::string &e, const std::string &f, siz
     for (unsigned long int i = 0; i < s.size(); i++) {
         const auto &elem = s[i];
 
-        if (elem.second.type == dtl::SES_COMMON) {
-            continue;
-        }
-
         if (elem.second.type != type || local_offset == -1) {
-            if (!agg.empty()) {
+            if (!agg.empty() && type != dtl::SES_COMMON) {
                 WriteOperation wr = WriteOperation();
                 wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
                 wr.set_data(agg);
@@ -46,7 +43,7 @@ std::vector<WriteOperation> diff(const std::string &e, const std::string &f, siz
         agg += elem.first;
     }
 
-    if (!agg.empty()) {
+    if (!agg.empty() && type != dtl::SES_COMMON) {
         WriteOperation wr = WriteOperation();
         wr.set_flag(type == dtl::SES_ADD ? APPEND : DELETE);
         wr.set_data(agg);
@@ -62,6 +59,7 @@ std::vector<WriteOperation> diff(const std::string &e, const std::string &f, siz
 int diff_enable_handler(int sock, int id, DiffWriteEnable *event) {
     (void)sock;
     (void)id;
+    log(ERROR, "Enable diff for %s", event->path().c_str());
     enable_diff(event->path());
     return 0;
 }
@@ -69,6 +67,7 @@ int diff_enable_handler(int sock, int id, DiffWriteEnable *event) {
 int diff_disable_handler(int sock, int id, DiffWriteDisable *event) {
     (void)sock;
     (void)id;
+    log(ERROR, "Disable diff for %s", event->path().c_str());
     disable_diff(event->path());
     return 0;
 }
