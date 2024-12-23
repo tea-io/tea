@@ -174,7 +174,7 @@ static int start_server(const std::string &language_name) {
     return 0;
 }
 
-int handle_lsp_request(int sock, int id, LspRequest *request) {
+int handle_lsp_request(int sock, SSL *ssl, int id, LspRequest *request) {
     const auto &language = request->language();
     auto language_handler = lsp_handles.find(language);
     if (language_handler == lsp_handles.end()) {
@@ -198,7 +198,7 @@ int handle_lsp_request(int sock, int id, LspRequest *request) {
     res.set_payload(data.value());
     res.set_language(language);
 
-    const auto n = send_message(sock, id, Type::LSP_RESPONSE, &res);
+    const auto n = send_message(sock, ssl, id, Type::LSP_RESPONSE, &res);
     return n < 0 ? -1 : n;
 }
 
