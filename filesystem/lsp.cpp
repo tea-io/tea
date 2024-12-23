@@ -14,15 +14,15 @@ void set_lsp_extension_socket(const int sock) {
     lsp_client_sock = sock;
 }
 
-int lsp_request_handler(const int sock, const int id, char *request) {
+int lsp_request_handler(const int sock, SSL *ssl, const int id, char *request) {
     LspRequest req;
     req.set_payload(request);
 
-    const auto n = send_message(sock, id, Type::LSP_REQUEST, &req);
+    const auto n = send_message(sock, ssl, id, Type::LSP_REQUEST, &req);
     return n < 0 ? -1 : n;
 }
 
-int lsp_response_handler(int sock, int id, LspResponse *response) {
+int lsp_response_handler(int sock, SSL *ssl, int id, LspResponse *response) {
     if (lsp_client_sock < 0) {
         log(ERROR, sock, "LSP client socket not initialized");
         return -1;

@@ -170,7 +170,7 @@ void start_lsp_servers(const std::string &server_base_path) {
     }
 }
 
-int handle_lsp_request(int sock, int id, LspRequest *request) {
+int handle_lsp_request(int sock, SSL *ssl, int id, LspRequest *request) {
     const auto &response = request->payload();
 
     const auto handle = lsp_handles["cpp"];
@@ -184,6 +184,6 @@ int handle_lsp_request(int sock, int id, LspRequest *request) {
     LspResponse res;
     res.set_payload(data.value());
 
-    const auto n = send_message(sock, id, Type::LSP_RESPONSE, &res);
+    const auto n = send_message(sock, ssl, id, Type::LSP_RESPONSE, &res);
     return n < 0 ? -1 : n;
 }

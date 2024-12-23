@@ -9,17 +9,18 @@
 #include <thread>
 
 int sock;
+SSL *ssl;
 config cfg;
 std::thread t;
 
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
     (void)f_cfg;
-    t = std::thread(recv_thread, sock);
+    t = std::thread(recv_thread, ssl, sock);
     InitRequest req = InitRequest();
     req.set_name(cfg.name);
     InitResponse res;
-    int err = request_response<InitResponse>(sock, req, &res, INIT_REQUEST);
+    int err = request_response<InitResponse>(sock, ssl, req, &res, INIT_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return NULL;
@@ -41,7 +42,7 @@ static int get_attr_request(const char *path, struct stat *stbuf, struct fuse_fi
     GetAttrRequest req = GetAttrRequest();
     req.set_path(path);
     GetAttrResponse res;
-    int err = request_response<GetAttrResponse>(sock, req, &res, GET_ATTR_REQUEST);
+    int err = request_response<GetAttrResponse>(sock, ssl, req, &res, GET_ATTR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -ENONET;
@@ -71,7 +72,7 @@ static int open_fs(const char *path, struct fuse_file_info *fi) {
     req.set_path(path);
     req.set_flags(fi->flags);
     OpenResponse res;
-    int err = request_response<OpenResponse>(sock, req, &res, OPEN_REQUEST);
+    int err = request_response<OpenResponse>(sock, ssl, req, &res, OPEN_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -87,7 +88,7 @@ static int release_fs(const char *path, struct fuse_file_info *fi) {
     ReleaseRequest req = ReleaseRequest();
     req.set_fd(fi->fh);
     ReleaseResponse res;
-    int err = request_response<ReleaseResponse>(sock, req, &res, RELEASE_REQUEST);
+    int err = request_response<ReleaseResponse>(sock, ssl, req, &res, RELEASE_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -104,7 +105,7 @@ static int readdir_fs(const char *path, void *buf, fuse_fill_dir_t filler, off_t
     ReadDirRequest req = ReadDirRequest();
     req.set_directory_descriptor(fi->fh);
     ReadDirResponse res;
-    int err = request_response<ReadDirResponse>(sock, req, &res, READ_DIR_REQUEST);
+    int err = request_response<ReadDirResponse>(sock, ssl, req, &res, READ_DIR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -124,7 +125,7 @@ static int read_fs(const char *path, char *buf, size_t size, off_t offset, struc
     req.set_size(size);
     req.set_offset(offset);
     ReadResponse res;
-    int err = request_response<ReadResponse>(sock, req, &res, READ_REQUEST);
+    int err = request_response<ReadResponse>(sock, ssl, req, &res, READ_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -145,7 +146,7 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
     req.set_offset(offset);
     req.set_data(buf, size);
     WriteResponse res;
-    int err = request_response<WriteResponse>(sock, req, &res, WRITE_REQUEST);
+    int err = request_response<WriteResponse>(sock, ssl, req, &res, WRITE_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -166,7 +167,7 @@ static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
     req.set_path(path);
     req.set_mode(mode);
     CreateResponse res;
-    int err = request_response<CreateResponse>(sock, req, &res, CREATE_REQUEST);
+    int err = request_response<CreateResponse>(sock, ssl, req, &res, CREATE_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -182,7 +183,7 @@ static int mkdir_fs(const char *path, mode_t mode) {
     req.set_path(path);
     req.set_mode(mode | S_IFDIR);
     MkdirResponse res;
-    int err = request_response<MkdirResponse>(sock, req, &res, MKDIR_REQUEST);
+    int err = request_response<MkdirResponse>(sock, ssl, req, &res, MKDIR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -196,7 +197,7 @@ static int unlink_fs(const char *path) {
     UnlinkRequest req = UnlinkRequest();
     req.set_path(path);
     UnlinkResponse res;
-    int err = request_response<UnlinkResponse>(sock, req, &res, UNLINK_REQUEST);
+    int err = request_response<UnlinkResponse>(sock, ssl, req, &res, UNLINK_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -210,7 +211,7 @@ static int rmdir_fs(const char *path) {
     RmdirRequest req = RmdirRequest();
     req.set_path(path);
     RmdirResponse res;
-    int err = request_response<RmdirResponse>(sock, req, &res, RMDIR_REQUEST);
+    int err = request_response<RmdirResponse>(sock, ssl, req, &res, RMDIR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -226,7 +227,7 @@ static int rename_fs(const char *old_path, const char *new_path, unsigned int fl
     req.set_new_path(new_path);
     req.set_flags(flags);
     RenameResponse res;
-    int err = request_response<RenameResponse>(sock, req, &res, RENAME_REQUEST);
+    int err = request_response<RenameResponse>(sock, ssl, req, &res, RENAME_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -251,7 +252,7 @@ static int chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
     req.set_path(path);
     req.set_mode(mode);
     ChmodResponse res;
-    int err = request_response<ChmodResponse>(sock, req, &res, CHMOD_REQUEST);
+    int err = request_response<ChmodResponse>(sock, ssl, req, &res, CHMOD_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -268,7 +269,7 @@ static int truncate_fs(const char *path, off_t size, struct fuse_file_info *fi) 
     req.set_path(path);
     req.set_size(size);
     TruncateResponse res;
-    int err = request_response<TruncateResponse>(sock, req, &res, TRUNCATE_REQUEST);
+    int err = request_response<TruncateResponse>(sock, ssl, req, &res, TRUNCATE_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -284,7 +285,7 @@ static int mknod_fs(const char *path, mode_t mode, dev_t dev) {
     req.set_mode(mode);
     req.set_dev(dev);
     MknodResponse res;
-    int err = request_response<MknodResponse>(sock, req, &res, MKNOD_REQUEST);
+    int err = request_response<MknodResponse>(sock, ssl, req, &res, MKNOD_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -299,7 +300,7 @@ static int link_fs(const char *old_path, const char *new_path) {
     req.set_old_path(old_path);
     req.set_new_path(new_path);
     LinkResponse res;
-    int err = request_response<LinkResponse>(sock, req, &res, LINK_REQUEST);
+    int err = request_response<LinkResponse>(sock, ssl, req, &res, LINK_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -319,7 +320,7 @@ static int symlink_fs(const char *old_path, const char *new_path) {
     req.set_old_path(old_path_str);
     req.set_new_path(new_path);
     SymlinkResponse res;
-    int err = request_response<SymlinkResponse>(sock, req, &res, SYMLINK_REQUEST);
+    int err = request_response<SymlinkResponse>(sock, ssl, req, &res, SYMLINK_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -333,7 +334,7 @@ static int read_link_fs(const char *link, char *buf, size_t s) {
     ReadLinkRequest req = ReadLinkRequest();
     req.set_path(link);
     ReadLinkResponse res;
-    int err = request_response<ReadLinkResponse>(sock, req, &res, READ_LINK_REQUEST);
+    int err = request_response<ReadLinkResponse>(sock, ssl, req, &res, READ_LINK_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -352,7 +353,7 @@ static int statfs(const char *path, struct statvfs *stbuf) {
     StatfsRequest req = StatfsRequest();
     req.set_path(path);
     StatfsResponse res;
-    int err = request_response<StatfsResponse>(sock, req, &res, STATFS_REQUEST);
+    int err = request_response<StatfsResponse>(sock, ssl, req, &res, STATFS_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -385,7 +386,7 @@ static int fsync_fs(const char *path, int datasync, struct fuse_file_info *fi) {
     FsyncRequest req = FsyncRequest();
     req.set_fd(fi->fh);
     FsyncResponse res;
-    int err = request_response<FsyncResponse>(sock, req, &res, FSYNC_REQUEST);
+    int err = request_response<FsyncResponse>(sock, ssl, req, &res, FSYNC_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -402,7 +403,7 @@ static int setxattr_fs(const char *path, const char *name, const char *value, si
     req.set_value(value, size);
     req.set_flags(flags);
     SetxattrResponse res;
-    int err = request_response<SetxattrResponse>(sock, req, &res, SETXATTR_REQUEST);
+    int err = request_response<SetxattrResponse>(sock, ssl, req, &res, SETXATTR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -417,7 +418,7 @@ static int getxattr_fs(const char *path, const char *name, char *value, size_t s
     req.set_path(path);
     req.set_name(name);
     GetxattrResponse res;
-    int err = request_response<GetxattrResponse>(sock, req, &res, GETXATTR_REQUEST);
+    int err = request_response<GetxattrResponse>(sock, ssl, req, &res, GETXATTR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -438,7 +439,7 @@ static int listxattr_fs(const char *path, char *list, size_t size) {
     ListxattrRequest req = ListxattrRequest();
     req.set_path(path);
     ListxattrResponse res;
-    int err = request_response<ListxattrResponse>(sock, req, &res, LISTXATTR_REQUEST);
+    int err = request_response<ListxattrResponse>(sock, ssl, req, &res, LISTXATTR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -479,7 +480,7 @@ static int removexattr_fs(const char *path, const char *name) {
     req.set_path(path);
     req.set_name(name);
     RemovexattrResponse res;
-    int err = request_response<RemovexattrResponse>(sock, req, &res, REMOVEXATTR_REQUEST);
+    int err = request_response<RemovexattrResponse>(sock, ssl, req, &res, REMOVEXATTR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -494,7 +495,7 @@ static int opendir_fs(const char *path, fuse_file_info *fi) {
     OpendirRequest req = OpendirRequest();
     req.set_path(path);
     OpendirResponse res;
-    int err = request_response<OpendirResponse>(sock, req, &res, OPENDIR_REQUEST);
+    int err = request_response<OpendirResponse>(sock, ssl, req, &res, OPENDIR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -513,7 +514,7 @@ static int releasedir_fs(const char *path, struct fuse_file_info *fi) {
     }
     req.set_directory_descriptor(fi->fh);
     ReleasedirResponse res;
-    int err = request_response<ReleasedirResponse>(sock, req, &res, RELEASEDIR_REQUEST);
+    int err = request_response<ReleasedirResponse>(sock, ssl, req, &res, RELEASEDIR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -529,7 +530,7 @@ static int fsyncdir_fs(const char *path, int datasync, struct fuse_file_info *fi
     FsyncdirRequest req = FsyncdirRequest();
     req.set_directory_descriptor(fi->fh);
     FsyncdirResponse res;
-    int err = request_response<FsyncdirResponse>(sock, req, &res, FSYNCDIR_REQUEST);
+    int err = request_response<FsyncdirResponse>(sock, ssl, req, &res, FSYNCDIR_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -546,7 +547,7 @@ static int utimens_fs(const char *path, const struct timespec tv[2], struct fuse
     req.set_atime(tv[0].tv_sec);
     req.set_mtime(tv[1].tv_sec);
     UtimensResponse res;
-    int err = request_response<UtimensResponse>(sock, req, &res, UTIMENS_REQUEST);
+    int err = request_response<UtimensResponse>(sock, ssl, req, &res, UTIMENS_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -561,7 +562,7 @@ static int access_fs(const char *path, int mask) {
     req.set_path(path);
     req.set_mode(mask);
     AccessResponse res;
-    int err = request_response<AccessResponse>(sock, req, &res, ACCESS_REQUEST);
+    int err = request_response<AccessResponse>(sock, ssl, req, &res, ACCESS_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -580,7 +581,7 @@ static int lock_fs(const char *path, struct fuse_file_info *fi, int cmd, struct 
     req_lock->set_l_start(lock->l_start);
     req_lock->set_l_len(lock->l_len);
     LockResponse res;
-    int err = request_response<LockResponse>(sock, req, &res, LOCK_REQUEST);
+    int err = request_response<LockResponse>(sock, ssl, req, &res, LOCK_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -618,7 +619,7 @@ static int flock_fs(const char *path, struct fuse_file_info *fi, int op) {
     req.set_fd(fi->fh);
     req.set_op(op);
     FlockResponse res;
-    int err = request_response<FlockResponse>(sock, req, &res, FLOCK_REQUEST);
+    int err = request_response<FlockResponse>(sock, ssl, req, &res, FLOCK_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -634,7 +635,7 @@ static int fallocate_fs(const char *path, int mode, off_t offset, off_t length, 
     req.set_offset(offset);
     req.set_len(length);
     FallocateResponse res;
-    int err = request_response<FallocateResponse>(sock, req, &res, FALLOCATE_REQUEST);
+    int err = request_response<FallocateResponse>(sock, ssl, req, &res, FALLOCATE_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -650,7 +651,7 @@ static off_t lseek_fs(const char *path, off_t offset, int whence, struct fuse_fi
     req.set_offset(offset);
     req.set_whence(whence);
     LseekResponse res;
-    int err = request_response<LseekResponse>(sock, req, &res, LSEEK_REQUEST);
+    int err = request_response<LseekResponse>(sock, ssl, req, &res, LSEEK_REQUEST);
     if (err < 0) {
         log(ERROR, sock, "Error sending message");
         return -1;
@@ -663,9 +664,10 @@ static off_t lseek_fs(const char *path, off_t offset, int whence, struct fuse_fi
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-fuse_operations get_fuse_operations(int sock_fd, config cfg_param) {
+fuse_operations get_fuse_operations(int sock_fd, config cfg_param, SSL *ssl_param) {
     sock = sock_fd;
     cfg = cfg_param;
+    ssl = ssl_param;
     fuse_operations ops = {
         .getattr = get_attr_request,
         .readlink = read_link_fs,

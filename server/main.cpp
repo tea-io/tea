@@ -3,6 +3,7 @@
 #include "fs.h"
 #include "tcp.h"
 #include <filesystem>
+#include <getopt.h>
 #include <string>
 #include <sys/stat.h>
 
@@ -15,11 +16,14 @@ std::string banner = R"(
 )";
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        log(ERROR, "Usage: %s <dir>", argv[0]);
+    if (argc < 4) {
+        log(ERROR, "Usage: %s <dir> <cert> <key>", argv[0]);
         return 1;
     }
     std::filesystem::path path = argv[1];
+    std::string cert = argv[2];
+    std::string key = argv[3];
+
     if (!std::filesystem::exists(path)) {
         log(ERROR, "Directory %s does not exist", argv[1]);
         return 1;
@@ -28,6 +32,6 @@ int main(int argc, char *argv[]) {
     log(NONE, banner.c_str());
 
     start_lsp_servers(path);
-    listen(5210, get_handlers(path));
+    listen(5210, get_handlers(path), cert, key);
     return 0;
 };
