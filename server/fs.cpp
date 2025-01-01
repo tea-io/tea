@@ -24,7 +24,8 @@ struct client_info {
 
 std::list<client_info> clients_info;
 std::string base_path = "";
-std::map<std::string, DIR *> dirs;
+std::map<int, DIR *> dirs;
+long int dir_iter = 0;
 
 static int init_request(int sock, int id, InitRequest *req) {
     clients_info.push_back(client_info{.fd = sock, .name = req->name()});
@@ -109,24 +110,19 @@ static int release_request(int sock, int id, ReleaseRequest *req) {
 
 static int read_dir_request(int sock, int id, ReadDirRequest *req) {
     ReadDirResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    if (path.substr(0, base_path.size()) != base_path) {
-        res.set_error(EACCES);
+    DIR *dir = dirs[req->directory_descriptor()];
+    if (dir == nullptr) {
+        res.set_error(errno);
     } else {
-        DIR *dir = dirs[path];
-        if (dir == nullptr) {
+        struct dirent *entry;
+        errno = 0;
+        while ((entry = readdir(dir)) != nullptr) {
+            res.add_names(entry->d_name);
+        }
+        if (errno != 0) {
             res.set_error(errno);
         } else {
-            struct dirent *entry;
-            errno = 0;
-            while ((entry = readdir(dir)) != nullptr) {
-                res.add_names(entry->d_name);
-            }
-            if (errno != 0) {
-                res.set_error(errno);
-            } else {
-                res.set_error(0);
-            }
+            res.set_error(0);
         }
     }
     int err = send_message(sock, id, Type::READ_DIR_RESPONSE, &res);
@@ -243,10 +239,6 @@ static int rmdir_request(int sock, int id, RmdirRequest *req) {
     if (path.substr(0, base_path.size()) != base_path) {
         res.set_error(EACCES);
     } else {
-        if (dirs[path] != nullptr) {
-            closedir(dirs[path]);
-            dirs.erase(path);
-        }
         int err = rmdir(path.c_str());
         if (err < 0) {
             res.set_error(errno);
@@ -595,7 +587,8 @@ static int opendir_request(int sock, int id, OpendirRequest *req) {
             res.set_error(errno);
         } else {
             res.set_error(0);
-            dirs[path] = dir;
+            dirs[dir_iter] = dir;
+            res.set_directory_descriptor(dir_iter++);
         }
     }
     int err = send_message(sock, id, Type::OPENDIR_RESPONSE, &res);
@@ -608,13 +601,12 @@ static int opendir_request(int sock, int id, OpendirRequest *req) {
 static int releasedir_fs(int sock, int id, ReleasedirRequest *req) {
     (void)req;
     ReleasedirResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    DIR *dir = dirs[path];
+    DIR *dir = dirs[req->directory_descriptor()];
     int err;
     if (dir == nullptr) {
         res.set_error(ENOENT);
     } else {
-        dirs.erase(path);
+        dirs.erase(req->directory_descriptor());
         err = closedir(dir);
     }
     if (err < 0) {
@@ -631,20 +623,15 @@ static int releasedir_fs(int sock, int id, ReleasedirRequest *req) {
 
 static int fsyncdir_request(int sock, int id, FsyncdirRequest *req) {
     FsyncResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    if (path.substr(0, base_path.size()) != base_path) {
-        res.set_error(EACCES);
+    DIR *dir = dirs[req->directory_descriptor()];
+    int fd = dirfd(dir);
+    int err = fsync(fd);
+    if (err < 0) {
+        res.set_error(errno);
     } else {
-        DIR *dir = dirs[path];
-        int fd = dirfd(dir);
-        int err = fsync(fd);
-        if (err < 0) {
-            res.set_error(errno);
-        } else {
-            res.set_error(0);
-        }
+        res.set_error(0);
     }
-    int err = send_message(sock, id, Type::FSYNC_RESPONSE, &res);
+    err = send_message(sock, id, Type::FSYNC_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
