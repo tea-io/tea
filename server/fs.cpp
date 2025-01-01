@@ -24,7 +24,6 @@ struct client_info {
 
 std::list<client_info> clients_info;
 std::string base_path = "";
-std::map<std::string, int> fds;
 std::map<std::string, DIR *> dirs;
 
 static int init_request(int sock, int id, InitRequest *req) {
@@ -79,7 +78,7 @@ static int open_request(int sock, int id, OpenRequest *req) {
     } else {
         int fd = open(path.c_str(), req->flags());
         if (fd > 0) {
-            fds[path] = fd;
+            res.set_fd(fd);
         } else {
             res.set_error(errno);
         }
@@ -95,8 +94,7 @@ static int open_request(int sock, int id, OpenRequest *req) {
 static int release_request(int sock, int id, ReleaseRequest *req) {
     (void)req;
     ReleaseResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    int err = close(fds[path]);
+    int err = close(req->fd());
     if (err < 0) {
         res.set_error(errno);
     } else {
@@ -140,15 +138,10 @@ static int read_dir_request(int sock, int id, ReadDirRequest *req) {
 
 static int read_request(int sock, int id, ReadRequest *req) {
     ReadResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    int fd = fds[path];
-    if (fd < 0) {
-        res.set_error(EBADF);
-    }
     char *buf = new char[req->size()];
-    int err = lseek(fd, req->offset(), SEEK_SET);
+    int err = lseek(req->fd(), req->offset(), SEEK_SET);
     if (err >= 0) {
-        err = read(fd, buf, req->size());
+        err = read(req->fd(), buf, req->size());
     }
     if (err < 0) {
         res.set_error(errno);
@@ -165,14 +158,9 @@ static int read_request(int sock, int id, ReadRequest *req) {
 
 static int write_request(int sock, int id, WriteRequest *req) {
     WriteResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    int fd = fds[path];
-    if (fd < 0) {
-        res.set_error(EBADF);
-    }
-    int err = lseek(fd, req->offset(), SEEK_SET);
+    int err = lseek(req->fd(), req->offset(), SEEK_SET);
     if (err >= 0) {
-        err = write(fd, req->data().c_str(), req->data().size());
+        err = write(req->fd(), req->data().c_str(), req->data().size());
     }
     if (err < 0) {
         res.set_error(errno);
@@ -195,13 +183,13 @@ static int create_request(int sock, int id, CreateRequest *req) {
     } else {
         int fd = creat(path.c_str(), req->mode());
         if (fd > 0) {
-            fds[path] = fd;
+            res.set_fd(fd);
         } else {
             res.set_error(errno);
         }
     }
 
-    int err = send_message(sock, id, Type::OPEN_RESPONSE, &res);
+    int err = send_message(sock, id, Type::CREATE_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
@@ -490,19 +478,13 @@ static int statfs_request(int sock, int id, StatfsRequest *req) {
 
 static int fsync_request(int sock, int id, FsyncRequest *req) {
     FsyncResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    if (path.substr(0, base_path.size()) != base_path) {
-        res.set_error(EACCES);
+    int err = fsync(req->fd());
+    if (err < 0) {
+        res.set_error(errno);
     } else {
-        int fd = fds[path];
-        int err = fsync(fd);
-        if (err < 0) {
-            res.set_error(errno);
-        } else {
-            res.set_error(0);
-        }
+        res.set_error(0);
     }
-    int err = send_message(sock, id, Type::FSYNC_RESPONSE, &res);
+    err = send_message(sock, id, Type::FSYNC_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
@@ -716,33 +698,26 @@ static int access_request(int sock, int id, AccessRequest *req) {
 
 static int lock_request(int sock, int id, LockRequest *req) {
     LockResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    if (path.substr(0, base_path.size()) != base_path) {
-        res.set_error(EACCES);
-    } else if (fds.find(path) == fds.end()) {
-        res.set_error(EBADF);
+    res.set_error(EACCES);
+    struct flock lock;
+    lock.l_type = req->lock().l_type();
+    lock.l_whence = req->lock().l_whence();
+    lock.l_start = req->lock().l_start();
+    lock.l_len = req->lock().l_len();
+    int err = fcntl(req->fd(), req->cmd(), &lock);
+    if (err < 0) {
+        res.set_error(errno);
     } else {
-        int fd = fds[path];
-        struct flock lock;
-        lock.l_type = req->lock().l_type();
-        lock.l_whence = req->lock().l_whence();
-        lock.l_start = req->lock().l_start();
-        lock.l_len = req->lock().l_len();
-        int err = fcntl(fd, req->cmd(), &lock);
-        if (err < 0) {
-            res.set_error(errno);
-        } else {
-            res.set_error(0);
-        }
-        if (req->cmd() == F_GETLK) {
-            Lock *l = res.mutable_lock();
-            l->set_l_type(lock.l_type);
-            l->set_l_whence(lock.l_whence);
-            l->set_l_start(lock.l_start);
-            l->set_l_len(lock.l_len);
-        }
+        res.set_error(0);
     }
-    int err = send_message(sock, id, Type::LOCK_RESPONSE, &res);
+    if (req->cmd() == F_GETLK) {
+        Lock *l = res.mutable_lock();
+        l->set_l_type(lock.l_type);
+        l->set_l_whence(lock.l_whence);
+        l->set_l_start(lock.l_start);
+        l->set_l_len(lock.l_len);
+    }
+    err = send_message(sock, id, Type::LOCK_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
@@ -751,19 +726,13 @@ static int lock_request(int sock, int id, LockRequest *req) {
 
 static int flock_request(int sock, int id, FlockRequest *req) {
     FlockResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    if (fds.find(path) == fds.end()) {
-        res.set_error(EBADF);
+    int err = flock(req->fd(), req->op());
+    if (err < 0) {
+        res.set_error(errno);
     } else {
-        int fd = fds[path];
-        int err = flock(fd, req->op());
-        if (err < 0) {
-            res.set_error(errno);
-        } else {
-            res.set_error(0);
-        }
+        res.set_error(0);
     }
-    int err = send_message(sock, id, Type::FLOCK_RESPONSE, &res);
+    err = send_message(sock, id, Type::FLOCK_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
@@ -772,19 +741,13 @@ static int flock_request(int sock, int id, FlockRequest *req) {
 
 static int fallocate_request(int sock, int id, FallocateRequest *req) {
     FallocateResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    if (fds.find(path) == fds.end()) {
-        res.set_error(EBADF);
+    int err = fallocate(req->fd(), req->mode(), req->offset(), req->len());
+    if (err < 0) {
+        res.set_error(errno);
     } else {
-        int fd = fds[path];
-        int err = fallocate(fd, req->mode(), req->offset(), req->len());
-        if (err < 0) {
-            res.set_error(errno);
-        } else {
-            res.set_error(0);
-        }
+        res.set_error(0);
     }
-    int err = send_message(sock, id, Type::FALLOCATE_RESPONSE, &res);
+    err = send_message(sock, id, Type::FALLOCATE_RESPONSE, &res);
     if (err < 0) {
         return -1;
     }
@@ -793,18 +756,12 @@ static int fallocate_request(int sock, int id, FallocateRequest *req) {
 
 static int lseek_request(int sock, int id, LseekRequest *req) {
     LseekResponse res;
-    std::string path = std::filesystem::weakly_canonical(base_path + req->path());
-    if (fds.find(path) == fds.end()) {
-        res.set_error(EBADF);
+    off_t off = lseek(req->fd(), req->offset(), req->whence());
+    if (off < 0) {
+        res.set_error(errno);
     } else {
-        int fd = fds[path];
-        off_t off = lseek(fd, req->offset(), req->whence());
-        if (off < 0) {
-            res.set_error(errno);
-        } else {
-            res.set_error(0);
-            res.set_offset(off);
-        }
+        res.set_error(0);
+        res.set_offset(off);
     }
     int err = send_message(sock, id, Type::LSEEK_RESPONSE, &res);
     if (err < 0) {

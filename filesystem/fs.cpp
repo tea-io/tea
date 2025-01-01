@@ -3,6 +3,7 @@
 #include "../proto/messages.pb.h"
 #include "tcp.h"
 #include <cstring>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 #include <thread>
@@ -77,13 +78,14 @@ static int open_fs(const char *path, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to open file: %d", res.error());
     }
+    fi->fh = res.fd();
     return -res.error();
 };
 
 static int release_fs(const char *path, struct fuse_file_info *fi) {
-    (void)fi;
+    (void)path;
     ReleaseRequest req = ReleaseRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     ReleaseResponse res;
     int err = request_response<ReleaseResponse>(sock, req, &res, RELEASE_REQUEST);
     if (err < 0) {
@@ -116,9 +118,9 @@ static int readdir_fs(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 };
 
 static int read_fs(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-    (void)fi;
+    (void)path;
     ReadRequest req = ReadRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     req.set_size(size);
     req.set_offset(offset);
     ReadResponse res;
@@ -137,9 +139,9 @@ static int read_fs(const char *path, char *buf, size_t size, off_t offset, struc
 };
 
 static int write_fs(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-    (void)fi;
+    (void)path;
     WriteRequest req = WriteRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     req.set_offset(offset);
     req.set_data(buf, size);
     WriteResponse res;
@@ -160,7 +162,6 @@ static int write_fs(const char *path, const char *buf, size_t size, off_t offset
 };
 
 static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
-    (void)fi;
     CreateRequest req = CreateRequest();
     req.set_path(path);
     req.set_mode(mode);
@@ -172,6 +173,7 @@ static int create_fs(const char *path, mode_t mode, struct fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to create file: %d", res.error());
     }
+    fi->fh = res.fd();
     return -res.error();
 };
 
@@ -379,9 +381,9 @@ static int flush_fs(const char *path, struct fuse_file_info *fi) {
 
 static int fsync_fs(const char *path, int datasync, struct fuse_file_info *fi) {
     (void)datasync;
-    (void)fi;
+    (void)path;
     FsyncRequest req = FsyncRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     FsyncResponse res;
     int err = request_response<FsyncResponse>(sock, req, &res, FSYNC_REQUEST);
     if (err < 0) {
@@ -567,9 +569,9 @@ static int access_fs(const char *path, int mask) {
 };
 
 static int lock_fs(const char *path, struct fuse_file_info *fi, int cmd, struct flock *lock) {
-    (void)fi;
+    (void)path;
     LockRequest req = LockRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     req.set_cmd(cmd);
     Lock *req_lock = req.mutable_lock();
     req_lock->set_l_type(lock->l_type);
@@ -610,9 +612,9 @@ static int ioctl_fs(const char *path, int cmd, void *arg, struct fuse_file_info 
 };
 
 static int flock_fs(const char *path, struct fuse_file_info *fi, int op) {
-    (void)fi;
+    (void)path;
     FlockRequest req = FlockRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     req.set_op(op);
     FlockResponse res;
     int err = request_response<FlockResponse>(sock, req, &res, FLOCK_REQUEST);
@@ -624,9 +626,9 @@ static int flock_fs(const char *path, struct fuse_file_info *fi, int op) {
 };
 
 static int fallocate_fs(const char *path, int mode, off_t offset, off_t length, struct fuse_file_info *fi) {
-    (void)fi;
+    (void)path;
     FallocateRequest req = FallocateRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     req.set_mode(mode);
     req.set_offset(offset);
     req.set_len(length);
@@ -641,9 +643,9 @@ static int fallocate_fs(const char *path, int mode, off_t offset, off_t length, 
 
 // This is only for LSEEK_DATA and LSEEK_HOLE
 static off_t lseek_fs(const char *path, off_t offset, int whence, struct fuse_file_info *fi) {
-    (void)fi;
+    (void)path;
     LseekRequest req = LseekRequest();
-    req.set_path(path);
+    req.set_fd(fi->fh);
     req.set_offset(offset);
     req.set_whence(whence);
     LseekResponse res;
