@@ -94,9 +94,12 @@ message OpenRequest {
   int32 flags = 2;
 }
 
-message OpenResponse { int32 error = 1; }
+message OpenResponse {
+  int32 error = 1;
+  int32 fd = 2;
+}
 
-message ReleaseRequest { string path = 1; }
+message ReleaseRequest { int32 fd = 1; }
 
 message ReleaseResponse { int32 error = 1; }
 
@@ -108,7 +111,7 @@ message ReadDirResponse {
 }
 
 message ReadRequest {
-  string path = 1;
+  int32 fd = 1;
   int64 offset = 2;
   int32 size = 3;
 }
@@ -119,7 +122,7 @@ message ReadResponse {
 }
 
 message WriteRequest {
-  string path = 1;
+  int32 fd = 1;
   int64 offset = 2;
   bytes data = 3;
 }
@@ -134,7 +137,10 @@ message CreateRequest {
   int32 mode = 2;
 }
 
-message CreateResponse { int32 error = 1; }
+message CreateResponse {
+  int32 error = 1;
+  int32 fd = 2;
+}
 
 message MkdirRequest {
   string path = 1;
@@ -217,7 +223,7 @@ message StatfsResponse {
   int32 type = 10;
 }
 
-message FsyncRequest { string path = 1; }
+message FsyncRequest { int32 fd = 1; }
 
 message FsyncResponse { int32 error = 1; }
 
@@ -289,7 +295,7 @@ message Lock {
 }
 
 message LockRequest {
-  string path = 1;
+  int32 fd = 1;
   int32 cmd = 2;
   Lock lock = 3;
 }
@@ -300,14 +306,14 @@ message LockResponse {
 }
 
 message FlockRequest {
-  string path = 1;
+  int32 fd = 1;
   int32 op = 2;
 }
 
 message FlockResponse { int32 error = 1; }
 
 message FallocateRequest {
-  string path = 1;
+  int32 fd = 1;
   int32 mode = 2;
   int64 offset = 3;
   int64 len = 4;
@@ -316,7 +322,7 @@ message FallocateRequest {
 message FallocateResponse { int32 error = 1; }
 
 message LseekRequest {
-  string path = 1;
+  int32 fd = 1;
   int64 offset = 2;
   int32 whence = 3;
 }
