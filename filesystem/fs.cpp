@@ -98,11 +98,11 @@ static int release_fs(const char *path, struct fuse_file_info *fi) {
 };
 
 static int readdir_fs(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags) {
-    (void)fi;
+    (void)path;
     (void)flags;
     (void)offset;
     ReadDirRequest req = ReadDirRequest();
-    req.set_path(path);
+    req.set_directory_descriptor(fi->fh);
     ReadDirResponse res;
     int err = request_response<ReadDirResponse>(sock, req, &res, READ_DIR_REQUEST);
     if (err < 0) {
@@ -501,16 +501,17 @@ static int opendir_fs(const char *path, fuse_file_info *fi) {
     } else {
         log(INFO, sock, "Try to opendir: %d", res.error());
     }
+    fi->fh = res.directory_descriptor();
     return -res.error();
 };
 
 static int releasedir_fs(const char *path, struct fuse_file_info *fi) {
-    (void)fi;
+    (void)path;
     ReleasedirRequest req = ReleasedirRequest();
     if (path == NULL) {
         return 0;
     }
-    req.set_path(path);
+    req.set_directory_descriptor(fi->fh);
     ReleasedirResponse res;
     int err = request_response<ReleasedirResponse>(sock, req, &res, RELEASEDIR_REQUEST);
     if (err < 0) {
@@ -524,9 +525,9 @@ static int releasedir_fs(const char *path, struct fuse_file_info *fi) {
 
 static int fsyncdir_fs(const char *path, int datasync, struct fuse_file_info *fi) {
     (void)datasync;
-    (void)fi;
+    (void)path;
     FsyncdirRequest req = FsyncdirRequest();
-    req.set_path(path);
+    req.set_directory_descriptor(fi->fh);
     FsyncdirResponse res;
     int err = request_response<FsyncdirResponse>(sock, req, &res, FSYNCDIR_REQUEST);
     if (err < 0) {
