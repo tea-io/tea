@@ -65,6 +65,37 @@ template <typename T> int recv_handler_caller(char *recv_buffer, Header *header,
     return ret;
 }
 
+int handle_recv_lsp(const int sock, const int server_sock, const std::function<int(int, int, char *)> &handler) {
+    char buffer[HEADER_SIZE];
+    int received = full_read(sock, *buffer, sizeof(buffer));
+    if (received == 0) {
+        return 0;
+    }
+    if (received < static_cast<int>(sizeof(buffer))) {
+        log(DEBUG, sock, "Full header read failed");
+        return -1;
+    }
+    Header header = {};
+    deserialize(buffer, &header);
+    log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header.size, header.id, header.type, received);
+    auto *recv_buffer = new char[header.size + 1];
+    received = full_read(sock, *recv_buffer, header.size);
+    if (received == 0 && header.size != 0) {
+        return 0;
+    }
+    if (received < header.size) {
+        return -1;
+    }
+
+    recv_buffer[header.size] = '\0'; // ensure that the string is null-terminated
+    log(DEBUG, sock, "Received message: %s", recv_buffer);
+
+    const auto ret = handler(server_sock, header.id, recv_buffer);
+
+    delete[] recv_buffer;
+    return ret;
+}
+
 // Handle recv messages, 1 on success, 0 on EOF, -1 on error
 int handle_recv(int sock, recv_handlers &handlers) {
     char buffer[HEADER_SIZE];
@@ -79,7 +110,7 @@ int handle_recv(int sock, recv_handlers &handlers) {
     Header *header = new Header();
     deserialize(buffer, header);
     log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header->size, header->id, header->type, recived);
-    char *recv_buffer = new char[header->size];
+    char *recv_buffer = new char[header->size + 1];
     recived = full_read(sock, *recv_buffer, header->size);
     if (recived == 0 && header->size != 0) {
         return 0;
@@ -87,6 +118,8 @@ int handle_recv(int sock, recv_handlers &handlers) {
     if (recived < header->size) {
         return -1;
     }
+    recv_buffer[header->size] = '\0'; // ensure that the string is null-terminated
+
     int ret = -2;
     switch (header->type) {
     case Type::INIT_REQUEST: {
@@ -351,6 +384,14 @@ int handle_recv(int sock, recv_handlers &handlers) {
     }
     case Type::LSEEK_RESPONSE: {
         ret = recv_handler_caller<LseekResponse>(recv_buffer, header, sock, handlers.lseek_response);
+        break;
+    }
+    case Type::LSP_REQUEST: {
+        ret = recv_handler_caller<LspRequest>(recv_buffer, header, sock, handlers.lsp_request);
+        break;
+    }
+    case Type::LSP_RESPONSE: {
+        ret = recv_handler_caller<LspResponse>(recv_buffer, header, sock, handlers.lsp_response);
         break;
     }
     default: {

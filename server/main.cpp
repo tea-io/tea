@@ -1,4 +1,5 @@
 #include "../common/log.h"
+#include "../server/lsp.h"
 #include "fs.h"
 #include "tcp.h"
 #include <filesystem>
@@ -25,6 +26,8 @@ int main(int argc, char *argv[]) {
     }
     set_debug_log(true);
     log(NONE, banner.c_str());
+
+    start_lsp_servers();
     listen(5210, get_handlers(path));
     return 0;
 };

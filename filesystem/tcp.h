@@ -14,6 +14,8 @@ int connect(std::string host, int port);
 
 int recv_thread(int sock);
 
+int listen_lsp(int port, int server_sock);
+
 template <typename T> int request_response(int sock, google::protobuf::Message &request, T *response, Type type) {
     int id = ++requst_id;
     int err = send_message(sock, id, type, &request);

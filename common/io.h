@@ -75,8 +75,11 @@ struct recv_handlers {
     int (*fallocate_response)(int sock, int id, FallocateResponse *response);
     int (*lseek_request)(int sock, int id, LseekRequest *request);
     int (*lseek_response)(int sock, int id, LseekResponse *response);
+    int (*lsp_request)(int sock, int id, LspRequest *request);
+    int (*lsp_response)(int sock, int id, LspResponse *response);
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
+int handle_recv_lsp(int sock, int server_sock, const std::function<int(int, int, char *)> &handler);
 
 int full_read(int fd, char &buf, int size);
