@@ -1,10 +1,124 @@
 # tea
+Tea is a simple network file system for mainly editing source code with support for LSP (Language Server Protocol) executed on the server side.
 
-# Testing
+## Features
+* **File System**: Tea provides a network file system, enabling you to edit files remotely on the server side.
+* **Language Server Protocol (LSP)**: Tea supports LSP, executed on the server side, allowing for enhanced code editing features such as autocompletion, error checking, and more.
+* **Security**: Tea uses TLS (Transport Layer Security) to ensure encrypted and secure communication between the client and server.
 
-In order to run tests you should have a `catch2` test runner installed on your system with version `3.7.0`.
-Then simply navigate to the project root folder and run the make target with name `test-run`
+## Build
+We provide two ways to build Tea: building from source code and using Nix.
+The main challenge with building from source code is ensuring that you have the same version of Protocol Buffers (shared libraries) installed on your machines.
+Therefore, our suggestion is:
 
-```shell
-make test-run
+* **Nix**: (Recommended) A safer option, but requires Nix to be installed on your machine.
+* **Building from source code**: If you already have the same version of Protocol Buffers installed on your machines.
+
+### Nix
+#### Requirements
+
+[Install Nix](https://nixos.org/download.html) on your machines and enable Nix Flakes:
+```bash
+echo experimental-features = nix-command flakes >> ~/.config/nix/nix.conf
 ```
+#### Build and Install
+Buidling and install filesystem and server.
+```bash
+nix develop --install
+```
+### Building from source code
+#### Requirements
+* Protcol Buffers C++ library and Protcol Buffers C++ compiler
+* libfuse3 
+* Makefile
+* pkg-config
+* g++
+
+#### Build
+```bash
+make
+```
+To build the server or the filesystem separately, you can use the following targets: `server` or `filesystem`.
+
+#### Install
+```bash
+make install
+```
+To install the server or the filesystem separately, you can use the following targets: `install-server` or `install-filesystem`.
+
+## TLS preparation
+TODO
+
+## Usage
+### Server
+```bash
+tea-server project-directory-path
+```
+
+### Filesystem
+```bash
+tea-fs -h=server-host mount-point
+```
+To unmount the filesystem, use the following command:
+```bash
+umount mount-point
+```
+For advanced configuration of the filesystem, see help:
+```
+ tea-fs --help
+
+ _                __
+| |_ ___  __ _   / _|___
+| __/ _ \/ _` | | |_/ __|
+| ||  __/ (_| | |  _\__ \
+ \__\___|\__,_| |_| |___/
+
+usage: tea-fs [options] <mountpoint>
+
+
+File-system specific options:
+    -h   --host=<s>      The host of server (required)
+    -p   --port=<d>      The port of server (default: 5210)
+    -n   --name=<s>      The display name of user (default: login name)
+    --help               Print this help
+
+FUSE options:
+    -h   --help            print help
+    -V   --version         print version
+    -d   -o debug          enable debug output (implies -f)
+    -f                     foreground operation
+    -s                     disable multi-threaded operation
+    -o clone_fd            use separate fuse device fd for each thread
+                           (may improve performance)
+    -o max_idle_threads    the maximum number of idle worker threads
+                           allowed (default: -1)
+    -o max_threads         the maximum number of worker threads
+                           allowed (default: 10)
+    -o kernel_cache        cache files in kernel
+    -o [no]auto_cache      enable caching based on modification times (off)
+    -o no_rofd_flush       disable flushing of read-only fd on close (off)
+    -o umask=M             set file permissions (octal)
+    -o uid=N               set file owner
+    -o gid=N               set file group
+    -o entry_timeout=T     cache timeout for names (1.0s)
+    -o negative_timeout=T  cache timeout for deleted names (0.0s)
+    -o attr_timeout=T      cache timeout for attributes (1.0s)
+    -o ac_attr_timeout=T   auto cache timeout for attributes (attr_timeout)
+    -o noforget            never forget cached inodes
+    -o remember=T          remember cached inodes for T seconds (0s)
+    -o modules=M1[:M2...]  names of modules to push onto filesystem stack
+    -o allow_other         allow access by all users
+    -o allow_root          allow access by root
+    -o auto_unmount        auto unmount on process termination
+
+Options for subdir module:
+    -o subdir=DIR           prepend this directory to all paths (mandatory)
+    -o [no]rellinks         transform absolute symlinks to relative
+
+Options for iconv module:
+    -o from_code=CHARSET   original encoding of file names (default: UTF-8)
+    -o to_code=CHARSET     new encoding of the file names (default: UTF-8)
+```
+
+### LSP support
+TODO
