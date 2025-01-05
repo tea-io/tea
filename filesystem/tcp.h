@@ -5,7 +5,7 @@
 #include <mutex>
 #include <string>
 
-extern int requst_id;
+extern int request_id;
 extern std::map<int, std::string> messages;
 extern std::map<int, std::condition_variable> conditions;
 extern std::mutex condition_mutex;
@@ -17,7 +17,7 @@ int recv_thread(int sock);
 int listen_lsp(int port, int server_sock);
 
 template <typename T> int request_response(int sock, google::protobuf::Message &request, T *response, Type type) {
-    int id = ++requst_id;
+    int id = ++request_id;
     int err = send_message(sock, id, type, &request);
     if (err < 0) {
         return -1;

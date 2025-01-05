@@ -1,9 +1,6 @@
 #pragma once
 
-#include <array>
-#include <cstdio>
 #include <map>
-#include <stdexcept>
 #include <string>
 
 #include "../proto/messages.pb.h"
@@ -25,5 +22,5 @@ static std::map<std::string, std::string> available_lsps = {{"cpp", "/usr/bin/cl
 
 static std::map<std::string, std::shared_ptr<LspProcess>> lsp_handles = {};
 
-void start_lsp_servers();
+void start_lsp_servers(const std::string &server_base_path);
 int handle_lsp_request(int sock, int id, LspRequest *request);

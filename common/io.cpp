@@ -34,8 +34,12 @@ int send_message(int sock, int id, Type type, google::protobuf::Message *body) {
         log(DEBUG, sock, "(%d) Send message failed: %s", id, strerror(errno));
         return -1;
     }
-    std::string debug = body->DebugString();
-    log(DEBUG, sock, "(%d) Send message success: %s - %d bytes", id, debug.c_str(), len);
+    if (type == LSP_REQUEST || type == LSP_RESPONSE) {
+        log(DEBUG, sock, "(%d) Send LSP message success - %d bytes", id, len);
+    } else {
+        std::string debug = body->DebugString();
+        log(DEBUG, sock, "(%d) Send message success: %s - %d bytes", id, debug.c_str(), len);
+    }
     return len;
 }
 
@@ -59,8 +63,14 @@ int full_read(int fd, char &buf, int size) {
 template <typename T> int recv_handler_caller(char *recv_buffer, Header *header, int sock, int (*handler)(int sock, int id, T *response)) {
     T request;
     request.ParseFromArray(recv_buffer, header->size);
-    std::string type = typeid(T).name();
-    log(DEBUG, sock, "(%d) Recieved: %s\n %s", header->id, type.c_str(), request.DebugString().c_str());
+
+    const std::string type = typeid(T).name();
+    if (typeid(T) == typeid(LspRequest) || typeid(T) == typeid(LspResponse)) {
+        log(DEBUG, sock, "(%d) Received LSP: %s\n", header->id, type.c_str());
+    } else {
+        log(DEBUG, sock, "(%d) Received: %s\n %s", header->id, type.c_str(), request.DebugString().c_str());
+    }
+
     int ret = handler(sock, header->id, &request);
     return ret;
 }
@@ -110,7 +120,7 @@ int handle_recv(int sock, recv_handlers &handlers) {
     Header *header = new Header();
     deserialize(buffer, header);
     log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header->size, header->id, header->type, recived);
-    char *recv_buffer = new char[header->size +1];
+    char *recv_buffer = new char[header->size];
     recived = full_read(sock, *recv_buffer, header->size);
     if (recived == 0 && header->size != 0) {
         return 0;
@@ -118,7 +128,6 @@ int handle_recv(int sock, recv_handlers &handlers) {
     if (recived < header->size) {
         return -1;
     }
-    recv_buffer[header->size] = '\0'; // ensure that the string is null-terminated
 
     int ret = -2;
     switch (header->type) {

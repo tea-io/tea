@@ -34,20 +34,19 @@ int lsp_response_handler(int sock, int id, LspResponse *response) {
         .id = ++id,
         .type = 0,
     };
-    const auto serialized = serialize(&header);
+    const std::unique_ptr<char[]> serialized(serialize(&header));
 
     const auto buffer_size = HEADER_SIZE + payload.size();
-    const auto write_buffer = new char[buffer_size];
-    std::memcpy(write_buffer, serialized, HEADER_SIZE);
-    std::memcpy(write_buffer + HEADER_SIZE, payload.c_str(), payload.size());
+    const auto write_buffer = std::make_unique<char[]>(buffer_size);
+
+    std::memcpy(write_buffer.get(), serialized.get(), HEADER_SIZE);
+    std::memcpy(write_buffer.get() + HEADER_SIZE, payload.c_str(), payload.size());
 
     auto n = 0;
-    if (n = write(lsp_client_sock, write_buffer, buffer_size); n < 0) {
+    if (n = write(lsp_client_sock, write_buffer.get(), buffer_size); n < 0) {
         log(ERROR, lsp_client_sock, "Failed to write to lsp extension socket, error: %s", std::strerror(errno));
         return -1;
     }
 
-    delete[] serialized;
-    delete[] write_buffer;
     return n;
 }
