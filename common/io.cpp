@@ -110,7 +110,7 @@ int handle_recv(int sock, recv_handlers &handlers) {
     Header *header = new Header();
     deserialize(buffer, header);
     log(DEBUG, sock, "Received header: size %d id %d type %d %d bytes", header->size, header->id, header->type, recived);
-    char *recv_buffer = new char[header->size + 1];
+    char *recv_buffer = new char[header->size +1];
     recived = full_read(sock, *recv_buffer, header->size);
     if (recived == 0 && header->size != 0) {
         return 0;
