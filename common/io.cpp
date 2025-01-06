@@ -3,10 +3,12 @@
 #include "header.h"
 #include "log.h"
 #include <arpa/inet.h>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <google/protobuf/message.h>
+#include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 
@@ -32,6 +34,11 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
 
     int len = SSL_write(ssl, message_buffer, HEADER_SIZE + body->ByteSizeLong());
     delete[] message_buffer;
+
+    if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
+        log(DEBUG, sock, "(%d) Send message failed: SSL error", id);
+        return -1;
+    }
     if (len < 0) {
         log(DEBUG, sock, "(%d) Send message failed: %s", id, strerror(errno));
         return -1;
@@ -49,6 +56,11 @@ int full_read(int fd, SSL *ssl, char &buf, int size) {
     int recived = 0;
     while (recived < size) {
         int len = SSL_read(ssl, &buf + recived, size - recived);
+        if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
+            log(DEBUG, fd, "SSL error: Full read failed");
+            return -1;
+        }
+        ERR_print_errors_fp(stderr);
         if (len == 0) {
             log(DEBUG, fd, "EOF");
             return 0;
