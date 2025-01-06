@@ -32,7 +32,7 @@ void raw_log(int level, const char *content) {
 void log(int level, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    char buffer[1024];
+    char buffer[2 << 16];
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
     raw_log(level, buffer);
@@ -41,7 +41,7 @@ void log(int level, const char *fmt, ...) {
 void log(int level, int socket, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    char buffer[1024];
+    char buffer[2 << 16];
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
     log(level, "[%d] %s", socket, buffer);

@@ -1,6 +1,8 @@
 #include "fs.h"
+
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
+#include "lsp.h"
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -889,5 +891,7 @@ recv_handlers get_handlers(std::string path) {
         .fallocate_response = respons_handler<FallocateResponse *>,
         .lseek_request = lseek_request,
         .lseek_response = respons_handler<LseekResponse *>,
+        .lsp_request = handle_lsp_request,
+        .lsp_response = respons_handler<LspResponse *>,
     };
 }

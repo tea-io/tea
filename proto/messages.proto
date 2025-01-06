@@ -67,6 +67,8 @@ enum Type {
   FALLOCATE_RESPONSE = 63;
   LSEEK_REQUEST = 64;
   LSEEK_RESPONSE = 65;
+  LSP_REQUEST = 66;
+  LSP_RESPONSE = 67;
 }
 
 message InitRequest { string name = 1; }
@@ -323,3 +325,6 @@ message LseekResponse {
   int32 error = 1;
   int64 offset = 2;
 }
+
+message LspRequest { string payload = 1; }
+message LspResponse { string payload = 1; }

@@ -1,4 +1,5 @@
 #include "../common/log.h"
+#include "./lsp.h"
 #include "fs.h"
 #include "log.h"
 #include "tcp.h"
@@ -80,6 +81,8 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
+
+    std::thread lsp_thread(listen_lsp, 5211, sock);
 
     config cfg = {.name = opts.name};
 
