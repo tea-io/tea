@@ -32,7 +32,7 @@ CLIENT_CERTIFICATE := $(OPENSSL_KEY_DIR)/tea-client.crt
 CLIENT_KEY := $(OPENSSL_KEY_DIR)/tea-client.key
 CLIENT_CSR := $(OPENSSL_KEY_DIR)/tea-client.csr
 
-all: build cert
+all: build cert client-cert
 
 .PHONY: debug
 debug: C_FLAGS = $(DEV_C_FLAGS)
@@ -129,7 +129,7 @@ unit-run: unit
 
 .PHONY: unit 
 unit: proto/proto.pb.o
-	$(CC) $(UNIT_FLAGS) $(FS_FLAGS) -o tests/unit-runner $(UNIT_FILES) $(COMMON) $(SERVER_FILES) $(FS_FILES) proto/proto.pb.o $(TEST_LIBS)
+	$(CC) $(UNIT_FLAGS) $(OPENSSL_FLAGS) $(FS_FLAGS) -o tests/unit-runner $(UNIT_FILES) $(COMMON) $(SERVER_FILES) $(FS_FILES) proto/proto.pb.o $(TEST_LIBS)
 
 .PHONY: acceptance-run
 acceptance-run: acceptance
