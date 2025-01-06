@@ -604,7 +604,7 @@ static int releasedir_fs(int sock, SSL *ssl, int id, ReleasedirRequest *req) {
     (void)req;
     ReleasedirResponse res;
     DIR *dir = dirs[req->directory_descriptor()];
-    int err;
+    int err = 0;
     if (dir == nullptr) {
         res.set_error(ENOENT);
     } else {
