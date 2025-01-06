@@ -18,7 +18,7 @@ class LspProcess {
     int read_fd;
 };
 
-static std::map<std::string, std::string> available_lsps = {{"cpp", "/usr/bin/clangd"}};
+static std::map<std::string, std::string> available_lsps = {{"cpp", "clangd"}};
 
 static std::map<std::string, std::shared_ptr<LspProcess>> lsp_handles = {};
 
