@@ -133,7 +133,7 @@ void LspProcess::write(const std::string &data) const {
     log(DEBUG, "Wrote %d bytes to LSP", n);
 }
 
-std::string LspProcess::read() const {
+std::optional<std::string> LspProcess::read() const {
     std::array<char, 1024> buffer{};
     std::string result;
 
@@ -149,7 +149,7 @@ std::string LspProcess::read() const {
 
     const auto end_of_headers = result.find("\r\n\r\n");
     if (end_of_headers == std::string::npos) {
-        return "\"jsonrpc\":\"2.0\",\"result\":{}";
+        return std::nullopt;
     }
 
     assert(::base_path.has_value());
@@ -163,7 +163,7 @@ std::string LspProcess::read() const {
 }
 
 void start_lsp_servers(const std::string &server_base_path) {
-    ::server_path = std::move(server_base_path);
+    ::server_path = server_base_path;
 
     for (const auto &[language, _] : available_lsps) {
         lsp_handles[language] = std::make_shared<LspProcess>(language);
@@ -177,9 +177,12 @@ int handle_lsp_request(int sock, int id, LspRequest *request) {
     handle->write(response);
 
     const auto data = handle->read();
+    if (!data.has_value()) {
+        return 0;
+    }
 
     LspResponse res;
-    res.set_payload(data);
+    res.set_payload(data.value());
 
     const auto n = send_message(sock, id, Type::LSP_RESPONSE, &res);
     return n < 0 ? -1 : n;
