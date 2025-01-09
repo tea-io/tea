@@ -10,7 +10,7 @@ class LspProcess {
     explicit LspProcess(const std::string &language);
     ~LspProcess();
     void write(const std::string &data) const;
-    [[nodiscard]] std::string read() const;
+    [[nodiscard]] std::optional<std::string> read() const;
 
   private:
     pid_t pid;
