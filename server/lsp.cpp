@@ -164,27 +164,39 @@ std::optional<std::string> LspProcess::read() const {
     return patched_data;
 }
 
-void start_lsp_servers(const std::string &server_base_path) {
-    ::server_path = server_base_path;
-
-    for (const auto &[language, _] : available_lsps) {
-        lsp_handles[language] = std::make_shared<LspProcess>(language);
+static int start_server(const std::string &language_name) {
+    if (const auto command = available_lsps.find(language_name); command == available_lsps.end()) {
+        log(ERROR, "Language not supported");
+        return -1;
     }
+
+    lsp_handles[language_name] = std::make_shared<LspProcess>(language_name);
+    return 0;
 }
 
 int handle_lsp_request(int sock, int id, LspRequest *request) {
+    const auto &language = request->language();
+    auto language_handler = lsp_handles.find(language);
+    if (language_handler == lsp_handles.end()) {
+        if (start_server(language) < 0) {
+            return -1;
+        }
+
+        language_handler = lsp_handles.find(language);
+    }
+    const auto handler = language_handler->second;
+
     const auto &response = request->payload();
+    handler->write(response);
 
-    const auto handle = lsp_handles["cpp"];
-    handle->write(response);
-
-    const auto data = handle->read();
+    const auto data = handler->read();
     if (!data.has_value()) {
         return 0;
     }
 
     LspResponse res;
     res.set_payload(data.value());
+    res.set_language(language);
 
     const auto n = send_message(sock, id, Type::LSP_RESPONSE, &res);
     return n < 0 ? -1 : n;
@@ -220,8 +232,10 @@ void initialize_lsp_config(std::string server_base_path) {
     }
 
     ::available_lsps.clear();
-    for (const auto& [language, server] : config.language_configs()) {
+    for (const auto &[language, server] : config.language_configs()) {
         ::available_lsps[language] = server;
         log(DEBUG, "LSP for %s is %s", language.c_str(), server.c_str());
     }
 }
+
+void reset_handlers() { ::lsp_handles.clear(); }

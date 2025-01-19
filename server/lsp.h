@@ -19,9 +19,8 @@ class LspProcess {
 };
 
 static std::map<std::string, std::string> available_lsps = {};
-
 static std::map<std::string, std::shared_ptr<LspProcess>> lsp_handles = {};
 
-void start_lsp_servers(const std::string &server_base_path);
 int handle_lsp_request(int sock, int id, LspRequest *request);
 void initialize_lsp_config(std::string server_base_path);
+void reset_handlers();
