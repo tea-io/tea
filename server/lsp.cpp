@@ -9,7 +9,9 @@
 #include "../common/io.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
+#include "google/protobuf/util/json_util.h"
 
+#include <fstream>
 #include <iomanip>
 #include <regex>
 
@@ -186,4 +188,40 @@ int handle_lsp_request(int sock, int id, LspRequest *request) {
 
     const auto n = send_message(sock, id, Type::LSP_RESPONSE, &res);
     return n < 0 ? -1 : n;
+}
+
+void initialize_lsp_config(std::string server_base_path) {
+    ::server_path = std::move(server_base_path);
+
+    auto config_home = getenv("XDG_CONFIG_HOME");
+    if (config_home == nullptr) {
+        const auto home = getenv("HOME");
+        if (home == nullptr) {
+            log(ERROR, "HOME is not set. No LSPs will be available.");
+            return;
+        }
+        config_home = static_cast<char *>(std::malloc(strlen(home) + strlen("/.config") + 1));
+        strcpy(config_home, home);
+        strcat(config_home, "/.config");
+    }
+
+    auto config_file = std::ifstream(std::string(config_home) + "/tea/config.json");
+    if (!config_file.is_open()) {
+        log(ERROR, "Unable to open config file. No LSPs will be available. Error is: %s", strerror(errno));
+        log(ERROR, "Please create a config file at $XDG_CONFIG_HOME/tea/config.json");
+        return;
+    }
+    const auto json_string = std::string(std::istreambuf_iterator(config_file), std::istreambuf_iterator<char>());
+
+    auto config = TeaConfigFile{};
+    if (const auto status = google::protobuf::json::JsonStringToMessage(json_string, &config); !status.ok()) {
+        log(ERROR, "Failed to deserialize config file: %s", status.ToString());
+        return;
+    }
+
+    ::available_lsps.clear();
+    for (const auto& [language, server] : config.language_configs()) {
+        ::available_lsps[language] = server;
+        log(DEBUG, "LSP for %s is %s", language.c_str(), server.c_str());
+    }
 }

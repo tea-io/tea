@@ -337,3 +337,7 @@ message LseekResponse {
 
 message LspRequest { string payload = 1; }
 message LspResponse { string payload = 1; }
+
+message TeaConfigFile {
+  map<string, string> language_configs = 1;
+}
