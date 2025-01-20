@@ -9,7 +9,9 @@
 #include "../common/io.h"
 #include "../common/log.h"
 #include "../proto/messages.pb.h"
+#include "google/protobuf/util/json_util.h"
 
+#include <fstream>
 #include <iomanip>
 #include <regex>
 
@@ -162,28 +164,78 @@ std::optional<std::string> LspProcess::read() const {
     return patched_data;
 }
 
-void start_lsp_servers(const std::string &server_base_path) {
-    ::server_path = server_base_path;
-
-    for (const auto &[language, _] : available_lsps) {
-        lsp_handles[language] = std::make_shared<LspProcess>(language);
+static int start_server(const std::string &language_name) {
+    if (const auto command = available_lsps.find(language_name); command == available_lsps.end()) {
+        log(ERROR, "Language not supported");
+        return -1;
     }
+
+    lsp_handles[language_name] = std::make_shared<LspProcess>(language_name);
+    return 0;
 }
 
 int handle_lsp_request(int sock, int id, LspRequest *request) {
+    const auto &language = request->language();
+    auto language_handler = lsp_handles.find(language);
+    if (language_handler == lsp_handles.end()) {
+        if (start_server(language) < 0) {
+            return -1;
+        }
+
+        language_handler = lsp_handles.find(language);
+    }
+    const auto handler = language_handler->second;
+
     const auto &response = request->payload();
+    handler->write(response);
 
-    const auto handle = lsp_handles["cpp"];
-    handle->write(response);
-
-    const auto data = handle->read();
+    const auto data = handler->read();
     if (!data.has_value()) {
         return 0;
     }
 
     LspResponse res;
     res.set_payload(data.value());
+    res.set_language(language);
 
     const auto n = send_message(sock, id, Type::LSP_RESPONSE, &res);
     return n < 0 ? -1 : n;
 }
+
+void initialize_lsp_config(std::string server_base_path) {
+    ::server_path = std::move(server_base_path);
+
+    auto config_home = getenv("XDG_CONFIG_HOME");
+    if (config_home == nullptr) {
+        const auto home = getenv("HOME");
+        if (home == nullptr) {
+            log(ERROR, "HOME is not set. No LSPs will be available.");
+            return;
+        }
+        config_home = static_cast<char *>(std::malloc(strlen(home) + strlen("/.config") + 1));
+        strcpy(config_home, home);
+        strcat(config_home, "/.config");
+    }
+
+    auto config_file = std::ifstream(std::string(config_home) + "/tea/config.json");
+    if (!config_file.is_open()) {
+        log(ERROR, "Unable to open config file. No LSPs will be available. Error is: %s", strerror(errno));
+        log(ERROR, "Please create a config file at $XDG_CONFIG_HOME/tea/config.json");
+        return;
+    }
+    const auto json_string = std::string(std::istreambuf_iterator(config_file), std::istreambuf_iterator<char>());
+
+    auto config = TeaConfigFile{};
+    if (const auto status = google::protobuf::json::JsonStringToMessage(json_string, &config); !status.ok()) {
+        log(ERROR, "Failed to deserialize config file: %s", status.ToString());
+        return;
+    }
+
+    ::available_lsps.clear();
+    for (const auto &[language, server] : config.language_configs()) {
+        ::available_lsps[language] = server;
+        log(DEBUG, "LSP for %s is %s", language.c_str(), server.c_str());
+    }
+}
+
+void reset_handlers() { ::lsp_handles.clear(); }

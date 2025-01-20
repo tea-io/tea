@@ -75,7 +75,7 @@ template <typename T> int recv_handler_caller(char *recv_buffer, Header *header,
     return ret;
 }
 
-int handle_recv_lsp(const int sock, const int server_sock, const std::function<int(int, int, char *)> &handler) {
+int handle_recv_lsp(const int sock, const int server_sock, const std::function<int(int, int, int, char *)> &handler) {
     char buffer[HEADER_SIZE];
     int received = full_read(sock, *buffer, sizeof(buffer));
     if (received == 0) {
@@ -100,7 +100,7 @@ int handle_recv_lsp(const int sock, const int server_sock, const std::function<i
     recv_buffer[header.size] = '\0'; // ensure that the string is null-terminated
     log(DEBUG, sock, "Received message: %s", recv_buffer);
 
-    const auto ret = handler(server_sock, header.id, recv_buffer);
+    const auto ret = handler(server_sock, header.id, header.type /* language_id */, recv_buffer);
 
     delete[] recv_buffer;
     return ret;

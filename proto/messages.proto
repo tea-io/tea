@@ -335,5 +335,14 @@ message LseekResponse {
   int64 offset = 2;
 }
 
-message LspRequest { string payload = 1; }
-message LspResponse { string payload = 1; }
+message LspRequest {
+  string payload = 1;
+  string language = 2;
+}
+
+message LspResponse {
+  string payload = 1;
+  string language = 2;
+}
+
+message TeaConfigFile { map<string, string> language_configs = 1; }

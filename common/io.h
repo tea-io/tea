@@ -80,6 +80,6 @@ struct recv_handlers {
 };
 
 int handle_recv(int sock, recv_handlers &handlers);
-int handle_recv_lsp(int sock, int server_sock, const std::function<int(int, int, char *)> &handler);
+int handle_recv_lsp(int sock, int server_sock, const std::function<int(int, int, int, char *)> &handler);
 
 int full_read(int fd, char &buf, int size);

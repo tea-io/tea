@@ -1,4 +1,7 @@
 #include "header.h"
+
+#include "../filesystem/lsp.h"
+
 #include <cstdint>
 
 char *serialize(Header *header) {
