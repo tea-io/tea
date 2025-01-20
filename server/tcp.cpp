@@ -2,6 +2,7 @@
 #include "../common/io.h"
 #include "../common/log.h"
 #include <list>
+#include <openssl/crypto.h>
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <thread>

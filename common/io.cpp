@@ -8,9 +8,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <google/protobuf/message.h>
+#include <mutex>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#include <sys/select.h>
 #include <sys/socket.h>
+
+std::mutex rmtx;
+std::mutex wmtx;
 
 int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Message *body) {
     Header header;
@@ -32,7 +37,11 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
     memcpy(message_buffer + HEADER_SIZE, body_buffer, body->ByteSizeLong());
     delete[] body_buffer;
 
+    wmtx.lock();
+    log(DEBUG, "Write lock!");
     int len = SSL_write(ssl, message_buffer, HEADER_SIZE + body->ByteSizeLong());
+    wmtx.unlock();
+    log(DEBUG, "Write unlock!");
     delete[] message_buffer;
 
     if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
@@ -55,7 +64,25 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
 int full_read(int fd, SSL *ssl, char &buf, int size) {
     int recived = 0;
     while (recived < size) {
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(fd, &read_fds);
+
+        log(DEBUG, "Before select!");
+        int ready = select(fd + 1, &read_fds, NULL, NULL, NULL);
+        if (ready <= 0) {
+            log(DEBUG, fd, "Select failed: %s", strerror(errno));
+            return -1;
+        } else {
+            log(DEBUG, fd, "Select succeded");
+        }
+
+        log(DEBUG, "After select!");
+        rmtx.lock();
+        log(DEBUG, fd, "mutex lock");
         int len = SSL_read(ssl, &buf + recived, size - recived);
+        rmtx.unlock();
+        log(DEBUG, fd, "mutex unlock");
         if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
             log(DEBUG, fd, "SSL error: Full read failed");
             return -1;
