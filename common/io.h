@@ -80,7 +80,7 @@ struct recv_handlers {
     int (*lsp_response)(int sock, SSL *ssl, int id, LspResponse *response);
 };
 
-int handle_recv(int sock, SSL *ssl, recv_handlers &handlers);
+int handle_recv(int sock, SSL *ssl, SSL *wssl, recv_handlers &handlers);
 int handle_recv_lsp(int sock, SSL *ssl, int server_sock, const std::function<int(int, SSL *, int, char *)> &handler);
 
 int full_read(int fd, SSL *ssl, char &buf, int size);

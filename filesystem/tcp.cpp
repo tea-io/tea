@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <google/protobuf/message.h>
 #include <openssl/crypto.h>
+#include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <string>
 #include <thread>
@@ -103,10 +104,15 @@ recv_handlers handlers = {
     .lsp_response = lsp_response_handler,
 };
 
-int connect(std::string host, int port, SSL *ssl) {
+int connect(std::string host, int port, SSL *ssl, SSL *rssl) {
     int sock;
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         log(ERROR, sock, "Error creating socket: %s", strerror(errno));
+        return 1;
+    }
+    int rsock;
+    if ((rsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        log(ERROR, rsock, "Error creating socket: %s", strerror(errno));
         return 1;
     }
     struct sockaddr_in addr;
@@ -117,7 +123,13 @@ int connect(std::string host, int port, SSL *ssl) {
         log(ERROR, sock, "Error connecting to port %d: %s", port, strerror(errno));
         return -1;
     }
+    addr.sin_port = htons(port + 5);
+    if (connect(rsock, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
+        log(ERROR, rsock, "Error connecting to port %d: %s", port + 5, strerror(errno));
+        return -1;
+    }
     log(INFO, sock, "Connected to port %d", port);
+    log(INFO, rsock, "Connected to port %d", port + 5);
 
     SSL_set_fd(ssl, sock);
     int err = SSL_connect(ssl);
@@ -126,13 +138,21 @@ int connect(std::string host, int port, SSL *ssl) {
         SSL_free(ssl);
         return -1;
     }
+    SSL_set_fd(rssl, rsock);
+    err = SSL_connect(rssl);
+    if (err <= 0) {
+        ERR_print_errors_fp(stderr);
+        log(ERROR, sock, "r SSL accept error");
+        SSL_free(rssl);
+        return -1;
+    }
 
     return sock;
 }
 
-int recv_thread(SSL *ssl, int sock) {
+int recv_thread(SSL *ssl, SSL *rssl, int sock) {
     while (true) {
-        int err = handle_recv(sock, ssl, handlers);
+        int err = handle_recv(sock, rssl, ssl, handlers);
         if (err < 0) {
             log(ERROR, sock, "Error handling message");
             return -1;

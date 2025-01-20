@@ -10,13 +10,14 @@
 
 int sock;
 SSL *ssl;
+SSL *rssl;
 config cfg;
 std::thread t;
 
 static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
     (void)conn;
     (void)f_cfg;
-    t = std::thread(recv_thread, ssl, sock);
+    t = std::thread(recv_thread, ssl, rssl, sock);
     InitRequest req = InitRequest();
     req.set_name(cfg.name);
     InitResponse res;
@@ -664,10 +665,11 @@ static off_t lseek_fs(const char *path, off_t offset, int whence, struct fuse_fi
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-fuse_operations get_fuse_operations(int sock_fd, config cfg_param, SSL *ssl_param) {
+fuse_operations get_fuse_operations(int sock_fd, config cfg_param, SSL *ssl_param, SSL *rssl_param) {
     sock = sock_fd;
     cfg = cfg_param;
     ssl = ssl_param;
+    rssl = rssl_param;
     fuse_operations ops = {
         .getattr = get_attr_request,
         .readlink = read_link_fs,

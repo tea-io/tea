@@ -33,9 +33,13 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
     delete[] body_buffer;
 
     int len = SSL_write(ssl, message_buffer, HEADER_SIZE + body->ByteSizeLong());
+    if (SSL_get_error(ssl, len) == SSL_ERROR_WANT_WRITE) {
+        len = SSL_write(ssl, message_buffer, HEADER_SIZE + body->ByteSizeLong());
+    }
     delete[] message_buffer;
 
     if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
+        ERR_print_errors_fp(stderr);
         log(DEBUG, sock, "(%d) Send message failed: SSL error", id);
         return -1;
     }
@@ -57,6 +61,7 @@ int full_read(int fd, SSL *ssl, char &buf, int size) {
     while (recived < size) {
         int len = SSL_read(ssl, &buf + recived, size - recived);
         if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
+            ERR_print_errors_fp(stderr);
             log(DEBUG, fd, "SSL error: Full read failed");
             return -1;
         }
@@ -138,7 +143,7 @@ int handle_recv_lsp(const int sock, SSL *ssl, const int server_sock, const std::
 }
 
 // Handle recv messages, 1 on success, 0 on EOF, -1 on error
-int handle_recv(int sock, SSL *ssl, recv_handlers &handlers) {
+int handle_recv(int sock, SSL *ssl, SSL *wssl, recv_handlers &handlers) {
     char buffer[HEADER_SIZE];
     int recived = full_read(sock, ssl, *buffer, sizeof(buffer));
     if (recived == 0) {
@@ -163,275 +168,275 @@ int handle_recv(int sock, SSL *ssl, recv_handlers &handlers) {
     int ret = -2;
     switch (header->type) {
     case Type::INIT_REQUEST: {
-        ret = recv_handler_caller<InitRequest>(recv_buffer, header, sock, ssl, handlers.init_request);
+        ret = recv_handler_caller<InitRequest>(recv_buffer, header, sock, wssl, handlers.init_request);
         break;
     }
     case Type::INIT_RESPONSE: {
-        ret = recv_handler_caller<InitResponse>(recv_buffer, header, sock, ssl, handlers.init_response);
+        ret = recv_handler_caller<InitResponse>(recv_buffer, header, sock, wssl, handlers.init_response);
         break;
     }
     case Type::GET_ATTR_REQUEST: {
-        ret = recv_handler_caller<GetAttrRequest>(recv_buffer, header, sock, ssl, handlers.get_attr_request);
+        ret = recv_handler_caller<GetAttrRequest>(recv_buffer, header, sock, wssl, handlers.get_attr_request);
         break;
     }
     case Type::GET_ATTR_RESPONSE: {
-        ret = recv_handler_caller<GetAttrResponse>(recv_buffer, header, sock, ssl, handlers.get_attr_response);
+        ret = recv_handler_caller<GetAttrResponse>(recv_buffer, header, sock, wssl, handlers.get_attr_response);
         break;
     }
     case Type::OPEN_REQUEST: {
-        ret = recv_handler_caller<OpenRequest>(recv_buffer, header, sock, ssl, handlers.open_request);
+        ret = recv_handler_caller<OpenRequest>(recv_buffer, header, sock, wssl, handlers.open_request);
         break;
     }
     case Type::OPEN_RESPONSE: {
-        ret = recv_handler_caller<OpenResponse>(recv_buffer, header, sock, ssl, handlers.open_response);
+        ret = recv_handler_caller<OpenResponse>(recv_buffer, header, sock, wssl, handlers.open_response);
         break;
     }
     case Type::RELEASE_REQUEST: {
-        ret = recv_handler_caller<ReleaseRequest>(recv_buffer, header, sock, ssl, handlers.release_request);
+        ret = recv_handler_caller<ReleaseRequest>(recv_buffer, header, sock, wssl, handlers.release_request);
         break;
     }
     case Type::RELEASE_RESPONSE: {
-        ret = recv_handler_caller<ReleaseResponse>(recv_buffer, header, sock, ssl, handlers.release_response);
+        ret = recv_handler_caller<ReleaseResponse>(recv_buffer, header, sock, wssl, handlers.release_response);
         break;
     }
     case Type::READ_DIR_REQUEST: {
-        ret = recv_handler_caller<ReadDirRequest>(recv_buffer, header, sock, ssl, handlers.read_dir_request);
+        ret = recv_handler_caller<ReadDirRequest>(recv_buffer, header, sock, wssl, handlers.read_dir_request);
         break;
     }
     case Type::READ_DIR_RESPONSE: {
-        ret = recv_handler_caller<ReadDirResponse>(recv_buffer, header, sock, ssl, handlers.read_dir_response);
+        ret = recv_handler_caller<ReadDirResponse>(recv_buffer, header, sock, wssl, handlers.read_dir_response);
         break;
     }
     case Type::READ_REQUEST: {
-        ret = recv_handler_caller<ReadRequest>(recv_buffer, header, sock, ssl, handlers.read_request);
+        ret = recv_handler_caller<ReadRequest>(recv_buffer, header, sock, wssl, handlers.read_request);
         break;
     }
     case Type::READ_RESPONSE: {
-        ret = recv_handler_caller<ReadResponse>(recv_buffer, header, sock, ssl, handlers.read_response);
+        ret = recv_handler_caller<ReadResponse>(recv_buffer, header, sock, wssl, handlers.read_response);
         break;
     }
     case Type::WRITE_REQUEST: {
-        ret = recv_handler_caller<WriteRequest>(recv_buffer, header, sock, ssl, handlers.write_request);
+        ret = recv_handler_caller<WriteRequest>(recv_buffer, header, sock, wssl, handlers.write_request);
         break;
     }
     case Type::WRITE_RESPONSE: {
-        ret = recv_handler_caller<WriteResponse>(recv_buffer, header, sock, ssl, handlers.write_response);
+        ret = recv_handler_caller<WriteResponse>(recv_buffer, header, sock, wssl, handlers.write_response);
         break;
     }
     case Type::CREATE_REQUEST: {
-        ret = recv_handler_caller<CreateRequest>(recv_buffer, header, sock, ssl, handlers.create_request);
+        ret = recv_handler_caller<CreateRequest>(recv_buffer, header, sock, wssl, handlers.create_request);
         break;
     }
     case Type::CREATE_RESPONSE: {
-        ret = recv_handler_caller<CreateResponse>(recv_buffer, header, sock, ssl, handlers.create_response);
+        ret = recv_handler_caller<CreateResponse>(recv_buffer, header, sock, wssl, handlers.create_response);
         break;
     }
     case Type::MKDIR_REQUEST: {
-        ret = recv_handler_caller<MkdirRequest>(recv_buffer, header, sock, ssl, handlers.mkdir_request);
+        ret = recv_handler_caller<MkdirRequest>(recv_buffer, header, sock, wssl, handlers.mkdir_request);
         break;
     }
     case Type::MKDIR_RESPONSE: {
-        ret = recv_handler_caller<MkdirResponse>(recv_buffer, header, sock, ssl, handlers.mkdir_response);
+        ret = recv_handler_caller<MkdirResponse>(recv_buffer, header, sock, wssl, handlers.mkdir_response);
         break;
     }
     case Type::UNLINK_REQUEST: {
-        ret = recv_handler_caller<UnlinkRequest>(recv_buffer, header, sock, ssl, handlers.unlink_request);
+        ret = recv_handler_caller<UnlinkRequest>(recv_buffer, header, sock, wssl, handlers.unlink_request);
         break;
     }
     case Type::UNLINK_RESPONSE: {
-        ret = recv_handler_caller<UnlinkResponse>(recv_buffer, header, sock, ssl, handlers.unlink_response);
+        ret = recv_handler_caller<UnlinkResponse>(recv_buffer, header, sock, wssl, handlers.unlink_response);
         break;
     }
     case Type::RMDIR_REQUEST: {
-        ret = recv_handler_caller<RmdirRequest>(recv_buffer, header, sock, ssl, handlers.rmdir_request);
+        ret = recv_handler_caller<RmdirRequest>(recv_buffer, header, sock, wssl, handlers.rmdir_request);
         break;
     }
     case Type::RMDIR_RESPONSE: {
-        ret = recv_handler_caller<RmdirResponse>(recv_buffer, header, sock, ssl, handlers.rmdir_response);
+        ret = recv_handler_caller<RmdirResponse>(recv_buffer, header, sock, wssl, handlers.rmdir_response);
         break;
     }
     case Type::RENAME_REQUEST: {
-        ret = recv_handler_caller<RenameRequest>(recv_buffer, header, sock, ssl, handlers.rename_request);
+        ret = recv_handler_caller<RenameRequest>(recv_buffer, header, sock, wssl, handlers.rename_request);
         break;
     }
     case Type::RENAME_RESPONSE: {
-        ret = recv_handler_caller<RenameResponse>(recv_buffer, header, sock, ssl, handlers.rename_response);
+        ret = recv_handler_caller<RenameResponse>(recv_buffer, header, sock, wssl, handlers.rename_response);
         break;
     }
     case Type::CHMOD_REQUEST: {
-        ret = recv_handler_caller<ChmodRequest>(recv_buffer, header, sock, ssl, handlers.chmod_request);
+        ret = recv_handler_caller<ChmodRequest>(recv_buffer, header, sock, wssl, handlers.chmod_request);
         break;
     }
     case Type::CHMOD_RESPONSE: {
-        ret = recv_handler_caller<ChmodResponse>(recv_buffer, header, sock, ssl, handlers.chmod_response);
+        ret = recv_handler_caller<ChmodResponse>(recv_buffer, header, sock, wssl, handlers.chmod_response);
         break;
     }
     case Type::TRUNCATE_REQUEST: {
-        ret = recv_handler_caller<TruncateRequest>(recv_buffer, header, sock, ssl, handlers.truncate_request);
+        ret = recv_handler_caller<TruncateRequest>(recv_buffer, header, sock, wssl, handlers.truncate_request);
         break;
     }
     case Type::TRUNCATE_RESPONSE: {
-        ret = recv_handler_caller<TruncateResponse>(recv_buffer, header, sock, ssl, handlers.truncate_response);
+        ret = recv_handler_caller<TruncateResponse>(recv_buffer, header, sock, wssl, handlers.truncate_response);
         break;
     }
     case Type::MKNOD_REQUEST: {
-        ret = recv_handler_caller<MknodRequest>(recv_buffer, header, sock, ssl, handlers.mknod_request);
+        ret = recv_handler_caller<MknodRequest>(recv_buffer, header, sock, wssl, handlers.mknod_request);
         break;
     }
     case Type::MKNOD_RESPONSE: {
-        ret = recv_handler_caller<MknodResponse>(recv_buffer, header, sock, ssl, handlers.mknod_response);
+        ret = recv_handler_caller<MknodResponse>(recv_buffer, header, sock, wssl, handlers.mknod_response);
         break;
     }
     case Type::LINK_REQUEST: {
-        ret = recv_handler_caller<LinkRequest>(recv_buffer, header, sock, ssl, handlers.link_request);
+        ret = recv_handler_caller<LinkRequest>(recv_buffer, header, sock, wssl, handlers.link_request);
         break;
     }
     case Type::LINK_RESPONSE: {
-        ret = recv_handler_caller<LinkResponse>(recv_buffer, header, sock, ssl, handlers.link_response);
+        ret = recv_handler_caller<LinkResponse>(recv_buffer, header, sock, wssl, handlers.link_response);
         break;
     }
     case Type::SYMLINK_REQUEST: {
-        ret = recv_handler_caller<SymlinkRequest>(recv_buffer, header, sock, ssl, handlers.symlink_request);
+        ret = recv_handler_caller<SymlinkRequest>(recv_buffer, header, sock, wssl, handlers.symlink_request);
         break;
     }
     case Type::SYMLINK_RESPONSE: {
-        ret = recv_handler_caller<SymlinkResponse>(recv_buffer, header, sock, ssl, handlers.symlink_response);
+        ret = recv_handler_caller<SymlinkResponse>(recv_buffer, header, sock, wssl, handlers.symlink_response);
         break;
     }
     case Type::READ_LINK_REQUEST: {
-        ret = recv_handler_caller<ReadLinkRequest>(recv_buffer, header, sock, ssl, handlers.read_link_request);
+        ret = recv_handler_caller<ReadLinkRequest>(recv_buffer, header, sock, wssl, handlers.read_link_request);
         break;
     }
     case Type::READ_LINK_RESPONSE: {
-        ret = recv_handler_caller<ReadLinkResponse>(recv_buffer, header, sock, ssl, handlers.read_link_response);
+        ret = recv_handler_caller<ReadLinkResponse>(recv_buffer, header, sock, wssl, handlers.read_link_response);
         break;
     }
     case Type::STATFS_REQUEST: {
-        ret = recv_handler_caller<StatfsRequest>(recv_buffer, header, sock, ssl, handlers.statfs_request);
+        ret = recv_handler_caller<StatfsRequest>(recv_buffer, header, sock, wssl, handlers.statfs_request);
         break;
     }
     case Type::STATFS_RESPONSE: {
-        ret = recv_handler_caller<StatfsResponse>(recv_buffer, header, sock, ssl, handlers.statfs_response);
+        ret = recv_handler_caller<StatfsResponse>(recv_buffer, header, sock, wssl, handlers.statfs_response);
         break;
     }
     case Type::FSYNC_REQUEST: {
-        ret = recv_handler_caller<FsyncRequest>(recv_buffer, header, sock, ssl, handlers.fsync_request);
+        ret = recv_handler_caller<FsyncRequest>(recv_buffer, header, sock, wssl, handlers.fsync_request);
         break;
     }
     case Type::FSYNC_RESPONSE: {
-        ret = recv_handler_caller<FsyncResponse>(recv_buffer, header, sock, ssl, handlers.fsync_response);
+        ret = recv_handler_caller<FsyncResponse>(recv_buffer, header, sock, wssl, handlers.fsync_response);
         break;
     }
     case Type::SETXATTR_REQUEST: {
-        ret = recv_handler_caller<SetxattrRequest>(recv_buffer, header, sock, ssl, handlers.setxattr_request);
+        ret = recv_handler_caller<SetxattrRequest>(recv_buffer, header, sock, wssl, handlers.setxattr_request);
         break;
     }
     case Type::SETXATTR_RESPONSE: {
-        ret = recv_handler_caller<SetxattrResponse>(recv_buffer, header, sock, ssl, handlers.setxattr_response);
+        ret = recv_handler_caller<SetxattrResponse>(recv_buffer, header, sock, wssl, handlers.setxattr_response);
         break;
     }
     case Type::GETXATTR_REQUEST: {
-        ret = recv_handler_caller<GetxattrRequest>(recv_buffer, header, sock, ssl, handlers.getxattr_request);
+        ret = recv_handler_caller<GetxattrRequest>(recv_buffer, header, sock, wssl, handlers.getxattr_request);
         break;
     }
     case Type::GETXATTR_RESPONSE: {
-        ret = recv_handler_caller<GetxattrResponse>(recv_buffer, header, sock, ssl, handlers.getxattr_response);
+        ret = recv_handler_caller<GetxattrResponse>(recv_buffer, header, sock, wssl, handlers.getxattr_response);
         break;
     }
     case Type::LISTXATTR_REQUEST: {
-        ret = recv_handler_caller<ListxattrRequest>(recv_buffer, header, sock, ssl, handlers.listxattr_request);
+        ret = recv_handler_caller<ListxattrRequest>(recv_buffer, header, sock, wssl, handlers.listxattr_request);
         break;
     }
     case Type::LISTXATTR_RESPONSE: {
-        ret = recv_handler_caller<ListxattrResponse>(recv_buffer, header, sock, ssl, handlers.listxattr_response);
+        ret = recv_handler_caller<ListxattrResponse>(recv_buffer, header, sock, wssl, handlers.listxattr_response);
         break;
     }
     case Type::REMOVEXATTR_REQUEST: {
-        ret = recv_handler_caller<RemovexattrRequest>(recv_buffer, header, sock, ssl, handlers.removexattr_request);
+        ret = recv_handler_caller<RemovexattrRequest>(recv_buffer, header, sock, wssl, handlers.removexattr_request);
         break;
     }
     case Type::REMOVEXATTR_RESPONSE: {
-        ret = recv_handler_caller<RemovexattrResponse>(recv_buffer, header, sock, ssl, handlers.removexattr_response);
+        ret = recv_handler_caller<RemovexattrResponse>(recv_buffer, header, sock, wssl, handlers.removexattr_response);
         break;
     }
     case Type::OPENDIR_REQUEST: {
-        ret = recv_handler_caller<OpendirRequest>(recv_buffer, header, sock, ssl, handlers.opendir_request);
+        ret = recv_handler_caller<OpendirRequest>(recv_buffer, header, sock, wssl, handlers.opendir_request);
         break;
     }
     case Type::OPENDIR_RESPONSE: {
-        ret = recv_handler_caller<OpendirResponse>(recv_buffer, header, sock, ssl, handlers.opendir_response);
+        ret = recv_handler_caller<OpendirResponse>(recv_buffer, header, sock, wssl, handlers.opendir_response);
         break;
     }
     case Type::RELEASEDIR_REQUEST: {
-        ret = recv_handler_caller<ReleasedirRequest>(recv_buffer, header, sock, ssl, handlers.releasedir_request);
+        ret = recv_handler_caller<ReleasedirRequest>(recv_buffer, header, sock, wssl, handlers.releasedir_request);
         break;
     }
     case Type::RELEASEDIR_RESPONSE: {
-        ret = recv_handler_caller<ReleasedirResponse>(recv_buffer, header, sock, ssl, handlers.releasedir_response);
+        ret = recv_handler_caller<ReleasedirResponse>(recv_buffer, header, sock, wssl, handlers.releasedir_response);
         break;
     }
     case Type::FSYNCDIR_REQUEST: {
-        ret = recv_handler_caller<FsyncdirRequest>(recv_buffer, header, sock, ssl, handlers.fsyncdir_request);
+        ret = recv_handler_caller<FsyncdirRequest>(recv_buffer, header, sock, wssl, handlers.fsyncdir_request);
         break;
     }
     case Type::FSYNCDIR_RESPONSE: {
-        ret = recv_handler_caller<FsyncdirResponse>(recv_buffer, header, sock, ssl, handlers.fsyncdir_response);
+        ret = recv_handler_caller<FsyncdirResponse>(recv_buffer, header, sock, wssl, handlers.fsyncdir_response);
         break;
     }
     case Type::UTIMENS_REQUEST: {
-        ret = recv_handler_caller<UtimensRequest>(recv_buffer, header, sock, ssl, handlers.utimens_request);
+        ret = recv_handler_caller<UtimensRequest>(recv_buffer, header, sock, wssl, handlers.utimens_request);
         break;
     }
     case Type::UTIMENS_RESPONSE: {
-        ret = recv_handler_caller<UtimensResponse>(recv_buffer, header, sock, ssl, handlers.utimens_response);
+        ret = recv_handler_caller<UtimensResponse>(recv_buffer, header, sock, wssl, handlers.utimens_response);
         break;
     }
     case Type::ACCESS_REQUEST: {
-        ret = recv_handler_caller<AccessRequest>(recv_buffer, header, sock, ssl, handlers.access_request);
+        ret = recv_handler_caller<AccessRequest>(recv_buffer, header, sock, wssl, handlers.access_request);
         break;
     }
     case Type::ACCESS_RESPONSE: {
-        ret = recv_handler_caller<AccessResponse>(recv_buffer, header, sock, ssl, handlers.access_response);
+        ret = recv_handler_caller<AccessResponse>(recv_buffer, header, sock, wssl, handlers.access_response);
         break;
     }
     case Type::LOCK_REQUEST: {
-        ret = recv_handler_caller<LockRequest>(recv_buffer, header, sock, ssl, handlers.lock_request);
+        ret = recv_handler_caller<LockRequest>(recv_buffer, header, sock, wssl, handlers.lock_request);
         break;
     }
     case Type::LOCK_RESPONSE: {
-        ret = recv_handler_caller<LockResponse>(recv_buffer, header, sock, ssl, handlers.lock_response);
+        ret = recv_handler_caller<LockResponse>(recv_buffer, header, sock, wssl, handlers.lock_response);
         break;
     }
     case Type::FLOCK_REQUEST: {
-        ret = recv_handler_caller<FlockRequest>(recv_buffer, header, sock, ssl, handlers.flock_request);
+        ret = recv_handler_caller<FlockRequest>(recv_buffer, header, sock, wssl, handlers.flock_request);
         break;
     }
     case Type::FLOCK_RESPONSE: {
-        ret = recv_handler_caller<FlockResponse>(recv_buffer, header, sock, ssl, handlers.flock_response);
+        ret = recv_handler_caller<FlockResponse>(recv_buffer, header, sock, wssl, handlers.flock_response);
         break;
     }
     case Type::FALLOCATE_REQUEST: {
-        ret = recv_handler_caller<FallocateRequest>(recv_buffer, header, sock, ssl, handlers.fallocate_request);
+        ret = recv_handler_caller<FallocateRequest>(recv_buffer, header, sock, wssl, handlers.fallocate_request);
         break;
     }
     case Type::FALLOCATE_RESPONSE: {
-        ret = recv_handler_caller<FallocateResponse>(recv_buffer, header, sock, ssl, handlers.fallocate_response);
+        ret = recv_handler_caller<FallocateResponse>(recv_buffer, header, sock, wssl, handlers.fallocate_response);
         break;
     }
     case Type::LSEEK_REQUEST: {
-        ret = recv_handler_caller<LseekRequest>(recv_buffer, header, sock, ssl, handlers.lseek_request);
+        ret = recv_handler_caller<LseekRequest>(recv_buffer, header, sock, wssl, handlers.lseek_request);
         break;
     }
     case Type::LSEEK_RESPONSE: {
-        ret = recv_handler_caller<LseekResponse>(recv_buffer, header, sock, ssl, handlers.lseek_response);
+        ret = recv_handler_caller<LseekResponse>(recv_buffer, header, sock, wssl, handlers.lseek_response);
         break;
     }
     case Type::LSP_REQUEST: {
-        ret = recv_handler_caller<LspRequest>(recv_buffer, header, sock, ssl, handlers.lsp_request);
+        ret = recv_handler_caller<LspRequest>(recv_buffer, header, sock, wssl, handlers.lsp_request);
         break;
     }
     case Type::LSP_RESPONSE: {
-        ret = recv_handler_caller<LspResponse>(recv_buffer, header, sock, ssl, handlers.lsp_response);
+        ret = recv_handler_caller<LspResponse>(recv_buffer, header, sock, wssl, handlers.lsp_response);
         break;
     }
     default: {

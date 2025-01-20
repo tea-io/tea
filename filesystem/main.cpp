@@ -81,6 +81,7 @@ int main(int argc, char *argv[]) {
 
     SSL_CTX *ctx;
     SSL *ssl;
+    SSL *rssl;
     SSL_load_error_strings();
     SSL_library_init();
 
@@ -99,6 +100,7 @@ int main(int argc, char *argv[]) {
     }
 
     ssl = SSL_new(ctx);
+    rssl = SSL_new(ctx);
     int sock = -1;
     if (opts.show_help) {
         show_help(args.argv[0]);
@@ -112,7 +114,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        sock = connect(opts.host, opts.port, ssl);
+        sock = connect(opts.host, opts.port, ssl, rssl);
         if (sock < 0) {
             cleanup_routine(&args, sock, ssl);
             return 1;
@@ -123,7 +125,7 @@ int main(int argc, char *argv[]) {
 
     config cfg = {.name = opts.name};
 
-    struct fuse_operations oper = get_fuse_operations(sock, cfg, ssl);
+    struct fuse_operations oper = get_fuse_operations(sock, cfg, ssl, rssl);
 
     int ret = fuse_main(args.argc, args.argv, &oper, NULL);
 

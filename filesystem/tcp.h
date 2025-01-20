@@ -10,9 +10,9 @@ extern std::map<int, std::string> messages;
 extern std::map<int, std::condition_variable> conditions;
 extern std::mutex condition_mutex;
 
-int connect(std::string host, int port, SSL *ssl);
+int connect(std::string host, int port, SSL *ssl, SSL *rssl);
 
-int recv_thread(SSL *ssl, int sock);
+int recv_thread(SSL *ssl, SSL *rssl, int sock);
 
 int listen_lsp(int port, int server_sock, SSL *ssl);
 
