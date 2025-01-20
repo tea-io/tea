@@ -8,9 +8,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <google/protobuf/message.h>
+#include <mutex>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <sys/socket.h>
+
+std::mutex ssl_mutex;
 
 int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Message *body) {
     Header header;
@@ -31,8 +34,11 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
     }
     memcpy(message_buffer + HEADER_SIZE, body_buffer, body->ByteSizeLong());
     delete[] body_buffer;
-
-    int len = SSL_write(ssl, message_buffer, HEADER_SIZE + body->ByteSizeLong());
+    int len = 0;
+    {
+        std::lock_guard<std::mutex> lock(ssl_mutex);
+        len = SSL_write(ssl, message_buffer, HEADER_SIZE + body->ByteSizeLong());
+    }
     delete[] message_buffer;
 
     if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
@@ -53,25 +59,41 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
 }
 
 int full_read(int fd, SSL *ssl, char &buf, int size) {
-    int recived = 0;
-    while (recived < size) {
-        int len = SSL_read(ssl, &buf + recived, size - recived);
-        if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
-            log(DEBUG, fd, "SSL error: Full read failed");
-            return -1;
+    int received = 0;
+
+    while (received < size) {
+        int len = 0;
+        {
+            std::lock_guard<std::mutex> lock(ssl_mutex);
+            len = SSL_read(ssl, &buf + received, size - received);
         }
-        ERR_print_errors_fp(stderr);
-        if (len == 0) {
-            log(DEBUG, fd, "EOF");
-            return 0;
+
+        if (len <= 0) {
+            int ssl_err = SSL_get_error(ssl, len);
+            if (ssl_err == SSL_ERROR_ZERO_RETURN) {
+                log(DEBUG, fd, "EOF");
+                return 0;
+            } else if (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE) {
+                fd_set read_fds;
+                FD_ZERO(&read_fds);
+                FD_SET(fd, &read_fds);
+                int sel_ret = select(fd + 1, &read_fds, NULL, NULL, NULL);
+                if (sel_ret < 0) {
+                    log(DEBUG, fd, "Select failed: %s", strerror(errno));
+                    return -1;
+                } else if (sel_ret == 0) {
+                    log(DEBUG, fd, "Select timeout");
+                    return -1;
+                }
+                continue;
+            } else {
+                log(DEBUG, fd, "SSL error: %s", ERR_error_string(ssl_err, NULL));
+                return -1;
+            }
         }
-        if (len < 0) {
-            log(DEBUG, fd, "Full read failed: %s", strerror(errno));
-            return -1;
-        }
-        recived += len;
+        received += len;
     }
-    return recived;
+    return received;
 }
 
 int full_read(int fd, char &buf, int size) {

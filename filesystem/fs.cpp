@@ -4,6 +4,7 @@
 #include "tcp.h"
 #include <cstring>
 #include <fcntl.h>
+#include <openssl/ssl.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 #include <thread>
@@ -33,6 +34,7 @@ static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
 static void destroy(void *private_data) {
     (void)private_data;
     google::protobuf::ShutdownProtobufLibrary();
+    SSL_shutdown(ssl);
     t.detach();
     close(sock);
 };

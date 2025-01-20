@@ -117,6 +117,13 @@ int main(int argc, char *argv[]) {
             cleanup_routine(&args, sock, ssl);
             return 1;
         }
+        int flags = fcntl(sock, F_GETFL, 0);
+        int err = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+        if (err < 0) {
+            log(ERROR, "Error setting socket to non-blocking: %s", strerror(errno));
+            cleanup_routine(&args, sock, ssl);
+            return 1;
+        }
     }
 
     std::thread lsp_thread(listen_lsp, 5211, sock, ssl);
