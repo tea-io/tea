@@ -47,7 +47,19 @@ make install
 To install the server or the filesystem separately, you can use the following targets: `install-server` or `install-filesystem`.
 
 ## TLS preparation
-TODO
+
+To generate key/certificate pair for server:
+
+```bash
+make cert
+
+```
+
+To generate key and certificate signed by server for client:
+
+```bash
+make client-cert
+```
 
 ## Usage
 ### Server
