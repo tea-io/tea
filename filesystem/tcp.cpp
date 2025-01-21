@@ -4,6 +4,8 @@
 #include "./lsp.h"
 #include <condition_variable>
 #include <google/protobuf/message.h>
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>
 #include <string>
 #include <thread>
 
@@ -12,8 +14,9 @@ std::map<int, std::condition_variable> conditions;
 std::mutex condition_mutex;
 int request_id = 0;
 
-template <typename T> int response_handler(int sock, int id, T message) {
+template <typename T> int response_handler(int sock, SSL *ssl, int id, T message) {
     (void)sock;
+    (void)ssl;
     std::unique_lock<std::mutex> lock(condition_mutex);
     messages[id] = message->SerializeAsString();
     conditions[id].notify_all();
@@ -21,8 +24,9 @@ template <typename T> int response_handler(int sock, int id, T message) {
     return 0;
 }
 
-template <typename T> int request_handler(int sock, int id, T message) {
+template <typename T> int request_handler(int sock, SSL *ssl, int id, T message) {
     (void)sock;
+    (void)ssl;
     (void)id;
     (void)message;
     return 0;
@@ -99,7 +103,7 @@ recv_handlers handlers = {
     .lsp_response = lsp_response_handler,
 };
 
-int connect(std::string host, int port) {
+int connect(std::string host, int port, SSL *ssl) {
     int sock;
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         log(ERROR, sock, "Error creating socket: %s", strerror(errno));
@@ -114,12 +118,21 @@ int connect(std::string host, int port) {
         return -1;
     }
     log(INFO, sock, "Connected to port %d", port);
+
+    SSL_set_fd(ssl, sock);
+    int err = SSL_connect(ssl);
+    if (err <= 0) {
+        log(ERROR, sock, "SSL accept error");
+        SSL_free(ssl);
+        return -1;
+    }
+
     return sock;
 }
 
-int recv_thread(int sock) {
+int recv_thread(SSL *ssl, int sock) {
     while (true) {
-        int err = handle_recv(sock, handlers);
+        int err = handle_recv(sock, ssl, handlers);
         if (err < 0) {
             log(ERROR, sock, "Error handling message");
             return -1;
@@ -134,9 +147,9 @@ int recv_thread(int sock) {
     return 1;
 }
 
-static void lsp_handler(const int sock, const int server_sock) {
+static void lsp_handler(const int sock, SSL *ssl, const int server_sock) {
     while (true) {
-        const auto err = handle_recv_lsp(sock, server_sock, lsp_request_handler);
+        const auto err = handle_recv_lsp(sock, ssl, server_sock, lsp_request_handler);
         if (err < 0) {
             log(ERROR, sock, "Error handling message");
         }
@@ -150,7 +163,7 @@ static void lsp_handler(const int sock, const int server_sock) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-fd-leak"
-int listen_lsp(const int port, const int server_sock) {
+int listen_lsp(const int port, const int server_sock, SSL *ssl) {
     const int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("extension socket");
@@ -188,7 +201,7 @@ int listen_lsp(const int port, const int server_sock) {
 
         log(INFO, client_sock, "Accepted connection from %s:%d", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         set_lsp_extension_socket(client_sock);
-        std::thread t(lsp_handler, client_sock, server_sock);
+        std::thread t(lsp_handler, client_sock, ssl, server_sock);
         t.detach();
     }
 }

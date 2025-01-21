@@ -113,6 +113,8 @@ proto/*.pb.cc
 proto/*.pb.h
 filesystem/filesystem
 server/server
+# openssl keys directory
+keys
 
 tests/catch2/**.o
 tests/unit-runner
