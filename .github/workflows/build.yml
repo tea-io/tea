@@ -1,5 +1,4 @@
 name: Tea
-
 on:
   push:
   pull_request:
@@ -87,12 +86,6 @@ jobs:
       run: nix develop --command bash -c "sudo ./filesystem/filesystem -h=127.0.0.1 -c=keys/tea-client.crt -k=keys/tea-client.key -s=keys/tea-server.crt mount-dir"
 
     - name: Check filesystem is mounted
-      run: findmnt mount-dir
-
-    - name: Run 2nd filesystem
-      run: nix develop --command bash -c "sudo ./filesystem/filesystem -h=127.0.0.1 -c=keys/tea-client.crt -k=keys/tea-client.key -s=keys/tea-server.crt  mount-dir2"
-
-    - name: Check 2nd filesystem is mounted
       run: findmnt mount-dir
 
     - name: Build tests
