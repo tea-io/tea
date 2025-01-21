@@ -64,12 +64,12 @@ make client-cert
 ## Usage
 ### Server
 ```bash
-tea-server project-directory-path
+tea-server -c=server-certificate -k=server-key project-directory-path
 ```
 
 ### Filesystem
 ```bash
-tea-fs -h=server-host mount-point
+tea-fs -h=server-host -c=client-certificate -k=client-key mount-point
 ```
 To unmount the filesystem, use the following command:
 ```bash
