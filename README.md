@@ -22,13 +22,13 @@ Therefore, our suggestion is:
 echo experimental-features = nix-command flakes >> ~/.config/nix/nix.conf
 ```
 #### Build and Install
-Buidling and install filesystem and server.
+Building and install filesystem and server.
 ```bash
 nix develop --install
 ```
 ### Building from source code
 #### Requirements
-* Protcol Buffers C++ library and Protcol Buffers C++ compiler
+* Protocol Buffers C++ library and Protocol Buffers C++ compiler
 * libfuse3 
 * Makefile
 * pkg-config
@@ -121,4 +121,33 @@ Options for iconv module:
 ```
 
 ### LSP support
-TODO
+To be able to use LSP features the LSP servers have to be configured. You can
+configure which LSP server will be started for the given language in the
+`$XDG_CONFIG_HOME/tea/config.json` file. The configuration file should look like this:
+```json
+{
+  "languageConfigs": {
+    "cpp": "clangd",
+    "c": "clangd",
+    "latex": "texlab"
+  }
+}
+```
+
+#### Visual Studio Code
+To use LSP features in the Visual Studio Code IDE, you need to install the
+extension for [Tea Integration](https://github.com/tea-io/tea.vscode). If you
+want to run the extension from source, you have to have the `pnpm` installed,
+then clone the repository and run the following commands:
+```bash
+pnpm install
+pnpm vsce package --no-dependencies
+```
+After that, you can install the extension from the generated `.vsix` file.
+
+#### Neovim
+To use LSP features in Neovim, you need to install a plugin for [Tea Integration](https://github.com/tea-io/tea.nvim).
+To enable the plugin, you have to add the plugin location to the `runtimepath` in your `init.lua` file:
+```lua
+vim.opt.runtimepath:prepend(</path/to/tea-nvim>)
+```
