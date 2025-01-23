@@ -23,6 +23,7 @@
 
           pkgs.protobuf
           pkgs.pkg-config
+          pkgs.gnutls
           pkgs.openssl
           pkgs.fuse3
         ];

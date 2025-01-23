@@ -1,11 +1,10 @@
 #include "../common/log.h"
-#include "./lsp.h"
 #include "fs.h"
 #include "log.h"
 #include "tcp.h"
 #include <fuse3/fuse.h>
 #include <fuse3/fuse_log.h>
-#include <openssl/ssl.h>
+#include <gnutls/gnutls.h>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -46,11 +45,11 @@ static void show_help(char *progname) {
               "    --help               Print this help\n");
 }
 
-static void cleanup_routine(fuse_args *args, const int sock_fd, SSL *ssl) {
+static void cleanup_routine(fuse_args *args, const int sock_fd, gnutls_session_t *session) {
     fuse_opt_free_args(args);
-    if (ssl != nullptr) {
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
+    if (session != nullptr) {
+        gnutls_bye(*session, GNUTLS_SHUT_RDWR);
+        gnutls_deinit(*session);
     }
     if (sock_fd >= 0)
         close(sock_fd);
@@ -78,26 +77,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    SSL_CTX *ctx;
-    SSL *ssl;
-    SSL_load_error_strings();
-    SSL_library_init();
-
-    ctx = SSL_CTX_new(TLS_client_method());
-    if (opts.cert == NULL || opts.key == NULL) {
-        log(ERROR, "Missing TLS key/certificate");
-        cleanup_routine(&args, -1, nullptr);
-    }
-    SSL_CTX_use_certificate_file(ctx, opts.cert, SSL_FILETYPE_PEM);
-    SSL_CTX_use_PrivateKey_file(ctx, opts.key, SSL_FILETYPE_PEM);
-    SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
-
-    if (opts.srvcert != NULL) {
-        SSL_CTX_load_verify_locations(ctx, opts.srvcert, nullptr);
-        SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, nullptr);
-    }
-
-    ssl = SSL_new(ctx);
+    gnutls_session_t session;
+    gnutls_certificate_credentials_t cred;
     int sock = -1;
     if (opts.show_help) {
         show_help(args.argv[0]);
@@ -110,30 +91,56 @@ int main(int argc, char *argv[]) {
             cleanup_routine(&args, sock, nullptr);
             return 1;
         }
+        if (opts.cert == NULL || opts.key == NULL) {
+            log(ERROR, "Missing TLS key/certificate");
+            cleanup_routine(&args, -1, nullptr);
+        }
 
-        sock = connect(opts.host, opts.port, ssl);
-        if (sock < 0) {
-            cleanup_routine(&args, sock, ssl);
+        gnutls_global_init();
+
+        gnutls_certificate_allocate_credentials(&cred);
+        int err = gnutls_certificate_set_x509_key_file(cred, opts.cert, opts.key, GNUTLS_X509_FMT_PEM);
+        if (err < 0) {
+            log(ERROR, "Failed to set certificate/key: %s", gnutls_strerror(err));
+            cleanup_routine(&args, -1, nullptr);
             return 1;
         }
-        int flags = fcntl(sock, F_GETFL, 0);
-        int err = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-        if (err < 0) {
-            log(ERROR, "Error setting socket to non-blocking: %s", strerror(errno));
-            cleanup_routine(&args, sock, ssl);
+
+        if (opts.srvcert != NULL) {
+            gnutls_certificate_set_x509_trust_file(cred, opts.srvcert, GNUTLS_X509_FMT_PEM);
+        }
+
+        gnutls_init(&session, GNUTLS_CLIENT);
+        gnutls_set_default_priority(session);
+        gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, cred);
+
+        sock = connect(opts.host, opts.port);
+        if (sock < 0) {
+            cleanup_routine(&args, sock, &session);
+            return 1;
+        }
+
+        gnutls_transport_set_int(session, sock);
+
+        if (gnutls_handshake(session) < 0) {
+            log(ERROR, "TLS handshake failed");
+            cleanup_routine(&args, sock, &session);
             return 1;
         }
     }
 
-    std::thread lsp_thread(listen_lsp, 5211, sock, ssl);
+    std::thread lsp_thread(listen_lsp, 5211, sock, session);
 
     config cfg = {.name = opts.name};
 
-    struct fuse_operations oper = get_fuse_operations(sock, cfg, ssl);
+    struct fuse_operations oper = get_fuse_operations(sock, cfg, session);
 
     int ret = fuse_main(args.argc, args.argv, &oper, NULL);
 
-    cleanup_routine(&args, sock, ssl);
-    SSL_CTX_free(ctx);
+    cleanup_routine(&args, sock, &session);
+    if (cred != nullptr) {
+        gnutls_certificate_free_credentials(cred);
+    }
+    gnutls_global_deinit();
     return ret;
 };

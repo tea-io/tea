@@ -7,15 +7,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <gnutls/gnutls.h>
 #include <google/protobuf/message.h>
 #include <mutex>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <sys/socket.h>
 
-std::mutex ssl_mutex;
+std::mutex write_mutex;
+std::mutex read_mutex;
 
-int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Message *body) {
+int send_message(int sock, gnutls_session_t ssl, int id, Type type, google::protobuf::Message *body) {
     Header header;
     header.size = body->ByteSizeLong();
     header.id = id;
@@ -34,19 +34,11 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
     }
     memcpy(message_buffer + HEADER_SIZE, body_buffer, body->ByteSizeLong());
     delete[] body_buffer;
-    int len = 0;
-    {
-        std::lock_guard<std::mutex> lock(ssl_mutex);
-        len = SSL_write(ssl, message_buffer, HEADER_SIZE + body->ByteSizeLong());
-    }
+    int len = full_write(sock, ssl, *message_buffer, HEADER_SIZE + body->ByteSizeLong());
     delete[] message_buffer;
 
-    if (SSL_get_error(ssl, len) != SSL_ERROR_NONE) {
-        log(DEBUG, sock, "(%d) Send message failed: SSL error", id);
-        return -1;
-    }
     if (len < 0) {
-        log(DEBUG, sock, "(%d) Send message failed: %s", id, strerror(errno));
+        log(ERROR, sock, "Send message failed: %s\n", gnutls_strerror(len));
         return -1;
     }
     if (type == LSP_REQUEST || type == LSP_RESPONSE) {
@@ -58,42 +50,42 @@ int send_message(int sock, SSL *ssl, int id, Type type, google::protobuf::Messag
     return len;
 }
 
-int full_read(int fd, SSL *ssl, char &buf, int size) {
-    int received = 0;
+int full_write(int fd, gnutls_session_t ssl, char &buf, int size) {
+    int recv = 0;
+    std::lock_guard<std::mutex> lock(write_mutex);
+    do {
+        int len = gnutls_record_send(ssl, &buf + recv, size - recv);
+        if (len < 0) {
+            if (len == GNUTLS_E_INTERRUPTED || len == GNUTLS_E_AGAIN) {
+                continue;
+            }
+            log(ERROR, fd, "Full write failed: %s", gnutls_strerror(len));
+            return -1;
+        }
+        recv += len;
+    } while (recv < size);
+    return recv;
+}
 
-    while (received < size) {
+int full_read(int fd, gnutls_session_t ssl, char &buf, int size) {
+    int recived = 0;
+    while (recived < size) {
         int len = 0;
         {
-            std::lock_guard<std::mutex> lock(ssl_mutex);
-            len = SSL_read(ssl, &buf + received, size - received);
+            std::lock_guard<std::mutex> lock(read_mutex);
+            len = gnutls_record_recv(ssl, &buf + recived, size - recived);
         }
-
-        if (len <= 0) {
-            int ssl_err = SSL_get_error(ssl, len);
-            if (ssl_err == SSL_ERROR_ZERO_RETURN) {
-                log(DEBUG, fd, "EOF");
-                return 0;
-            } else if (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE) {
-                fd_set read_fds;
-                FD_ZERO(&read_fds);
-                FD_SET(fd, &read_fds);
-                int sel_ret = select(fd + 1, &read_fds, NULL, NULL, NULL);
-                if (sel_ret < 0) {
-                    log(DEBUG, fd, "Select failed: %s", strerror(errno));
-                    return -1;
-                } else if (sel_ret == 0) {
-                    log(DEBUG, fd, "Select timeout");
-                    return -1;
-                }
-                continue;
-            } else {
-                log(DEBUG, fd, "SSL error: %s", ERR_error_string(ssl_err, NULL));
-                return -1;
-            }
+        if (len == 0) {
+            log(DEBUG, fd, "EOF");
+            return 0;
         }
-        received += len;
+        if (len < 0) {
+            log(DEBUG, fd, "Full read failed: %s", gnutls_strerror(len));
+            return -1;
+        }
+        recived += len;
     }
-    return received;
+    return recived;
 }
 
 int full_read(int fd, char &buf, int size) {
@@ -113,7 +105,9 @@ int full_read(int fd, char &buf, int size) {
     return recived;
 }
 
-template <typename T> int recv_handler_caller(char *recv_buffer, Header *header, int sock, SSL *ssl, int (*handler)(int sock, SSL *ssl, int id, T *response)) {
+template <typename T>
+int recv_handler_caller(char *recv_buffer, Header *header, int sock, gnutls_session_t ssl,
+                        int (*handler)(int sock, gnutls_session_t ssl, int id, T *response)) {
     T request;
     request.ParseFromArray(recv_buffer, header->size);
 
@@ -128,7 +122,7 @@ template <typename T> int recv_handler_caller(char *recv_buffer, Header *header,
     return ret;
 }
 
-int handle_recv_lsp(const int sock, SSL *ssl, const int server_sock, const std::function<int(int, SSL *, int, int, char *)> &handler) {
+int handle_recv_lsp(const int sock, gnutls_session_t ssl, const int server_sock, const std::function<int(int, gnutls_session_t, int, int, char *)> &handler) {
     char buffer[HEADER_SIZE];
     int received = full_read(sock, *buffer, sizeof(buffer));
     if (received == 0) {
@@ -159,7 +153,7 @@ int handle_recv_lsp(const int sock, SSL *ssl, const int server_sock, const std::
 }
 
 // Handle recv messages, 1 on success, 0 on EOF, -1 on error
-int handle_recv(int sock, SSL *ssl, recv_handlers &handlers) {
+int handle_recv(int sock, gnutls_session_t ssl, recv_handlers &handlers) {
     char buffer[HEADER_SIZE];
     int recived = full_read(sock, ssl, *buffer, sizeof(buffer));
     if (recived == 0) {

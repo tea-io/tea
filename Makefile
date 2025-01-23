@@ -10,7 +10,7 @@ DEV_C_FLAGS := -g3 -Wall -Wextra -pedantic -std=c++20 `pkg-config --cflags --lib
 	-fprofile-exclude-files=/usr/.* -Wno-analyzer-use-of-uninitialized-value \
 	-fsanitize=address,leak,undefined,null,return,signed-integer-overflow -fsanitize-trap=undefined -fno-sanitize-recover=all
 
-OPENSSL_FLAGS := -lssl -lcrypto
+OPENSSL_FLAGS := `pkg-config --cflags --libs gnutls`
 FS_FLAGS := -lfuse3 -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=31
 SERVER_FLAGS := 
 COMMON := common/log.cpp common/io.cpp common/header.cpp
@@ -36,7 +36,7 @@ all: build cert client-cert
 
 .PHONY: debug
 debug: C_FLAGS = $(DEV_C_FLAGS)
-debug: build
+debug: build cert client-cert
 
 .PHONY: build
 build: filesystem server

@@ -4,13 +4,12 @@
 #include "tcp.h"
 #include <cstring>
 #include <fcntl.h>
-#include <openssl/ssl.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 #include <thread>
 
 int sock;
-SSL *ssl;
+gnutls_session_t ssl;
 config cfg;
 std::thread t;
 
@@ -34,7 +33,8 @@ static void *init(struct fuse_conn_info *conn, struct fuse_config *f_cfg) {
 static void destroy(void *private_data) {
     (void)private_data;
     google::protobuf::ShutdownProtobufLibrary();
-    SSL_shutdown(ssl);
+    gnutls_bye(ssl, GNUTLS_SHUT_RDWR);
+    gnutls_deinit(ssl);
     t.detach();
     close(sock);
 };
@@ -666,7 +666,7 @@ static off_t lseek_fs(const char *path, off_t offset, int whence, struct fuse_fi
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-fuse_operations get_fuse_operations(int sock_fd, config cfg_param, SSL *ssl_param) {
+fuse_operations get_fuse_operations(int sock_fd, config cfg_param, gnutls_session_t ssl_param) {
     sock = sock_fd;
     cfg = cfg_param;
     ssl = ssl_param;

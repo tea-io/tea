@@ -29,7 +29,7 @@ std::string base_path = "";
 std::map<int, DIR *> dirs;
 long int dir_iter = 0;
 
-static int init_request(int sock, SSL *ssl, int id, InitRequest *req) {
+static int init_request(int sock, gnutls_session_t ssl, int id, InitRequest *req) {
     clients_info.push_back(client_info{.fd = sock, .name = req->name()});
     (void)req;
     InitResponse res;
@@ -41,7 +41,7 @@ static int init_request(int sock, SSL *ssl, int id, InitRequest *req) {
     return 0;
 }
 
-static int get_attr_request(int sock, SSL *ssl, int id, GetAttrRequest *req) {
+static int get_attr_request(int sock, gnutls_session_t ssl, int id, GetAttrRequest *req) {
     GetAttrResponse res;
     // check if the path is inside the base path (prevent directory traversal)
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
@@ -73,7 +73,7 @@ static int get_attr_request(int sock, SSL *ssl, int id, GetAttrRequest *req) {
     return 0;
 }
 
-static int open_request(int sock, SSL *ssl, int id, OpenRequest *req) {
+static int open_request(int sock, gnutls_session_t ssl, int id, OpenRequest *req) {
     OpenResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -94,7 +94,7 @@ static int open_request(int sock, SSL *ssl, int id, OpenRequest *req) {
     return 0;
 }
 
-static int release_request(int sock, SSL *ssl, int id, ReleaseRequest *req) {
+static int release_request(int sock, gnutls_session_t ssl, int id, ReleaseRequest *req) {
     (void)req;
     ReleaseResponse res;
     int err = close(req->fd());
@@ -110,7 +110,7 @@ static int release_request(int sock, SSL *ssl, int id, ReleaseRequest *req) {
     return 0;
 }
 
-static int read_dir_request(int sock, SSL *ssl, int id, ReadDirRequest *req) {
+static int read_dir_request(int sock, gnutls_session_t ssl, int id, ReadDirRequest *req) {
     ReadDirResponse res;
     DIR *dir = dirs[req->directory_descriptor()];
     if (dir == nullptr) {
@@ -134,7 +134,7 @@ static int read_dir_request(int sock, SSL *ssl, int id, ReadDirRequest *req) {
     return 0;
 }
 
-static int read_request(int sock, SSL *ssl, int id, ReadRequest *req) {
+static int read_request(int sock, gnutls_session_t ssl, int id, ReadRequest *req) {
     ReadResponse res;
     char *buf = new char[req->size()];
     int err = lseek(req->fd(), req->offset(), SEEK_SET);
@@ -154,7 +154,7 @@ static int read_request(int sock, SSL *ssl, int id, ReadRequest *req) {
     return 0;
 }
 
-static int write_request(int sock, SSL *ssl, int id, WriteRequest *req) {
+static int write_request(int sock, gnutls_session_t ssl, int id, WriteRequest *req) {
     WriteResponse res;
     int err = lseek(req->fd(), req->offset(), SEEK_SET);
     if (err >= 0) {
@@ -173,7 +173,7 @@ static int write_request(int sock, SSL *ssl, int id, WriteRequest *req) {
     return 0;
 }
 
-static int create_request(int sock, SSL *ssl, int id, CreateRequest *req) {
+static int create_request(int sock, gnutls_session_t ssl, int id, CreateRequest *req) {
     CreateResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -194,7 +194,7 @@ static int create_request(int sock, SSL *ssl, int id, CreateRequest *req) {
     return 0;
 }
 
-static int mkdir_request(int sock, SSL *ssl, int id, MkdirRequest *req) {
+static int mkdir_request(int sock, gnutls_session_t ssl, int id, MkdirRequest *req) {
     MkdirResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -214,7 +214,7 @@ static int mkdir_request(int sock, SSL *ssl, int id, MkdirRequest *req) {
     return 0;
 }
 
-static int unlink_request(int sock, SSL *ssl, int id, UnlinkRequest *req) {
+static int unlink_request(int sock, gnutls_session_t ssl, int id, UnlinkRequest *req) {
     UnlinkResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -235,7 +235,7 @@ static int unlink_request(int sock, SSL *ssl, int id, UnlinkRequest *req) {
     return 0;
 }
 
-static int rmdir_request(int sock, SSL *ssl, int id, RmdirRequest *req) {
+static int rmdir_request(int sock, gnutls_session_t ssl, int id, RmdirRequest *req) {
     RmdirResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -285,7 +285,7 @@ static int rename_exchange(std::string old_path, std::string new_path) {
     return 0;
 }
 
-static int rename_request(int sock, SSL *ssl, int id, RenameRequest *req) {
+static int rename_request(int sock, gnutls_session_t ssl, int id, RenameRequest *req) {
     RenameResponse res;
     std::string new_path = std::filesystem::weakly_canonical(base_path + req->new_path());
     if (new_path.substr(0, base_path.size()) != base_path) {
@@ -314,7 +314,7 @@ static int rename_request(int sock, SSL *ssl, int id, RenameRequest *req) {
     return 0;
 }
 
-static int chmod_request(int sock, SSL *ssl, int id, ChmodRequest *req) {
+static int chmod_request(int sock, gnutls_session_t ssl, int id, ChmodRequest *req) {
     ChmodResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -334,7 +334,7 @@ static int chmod_request(int sock, SSL *ssl, int id, ChmodRequest *req) {
     return 0;
 }
 
-static int truncate_request(int sock, SSL *ssl, int id, TruncateRequest *req) {
+static int truncate_request(int sock, gnutls_session_t ssl, int id, TruncateRequest *req) {
     TruncateResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -354,7 +354,7 @@ static int truncate_request(int sock, SSL *ssl, int id, TruncateRequest *req) {
     return 0;
 }
 
-static int mknod_request(int sock, SSL *ssl, int id, MknodRequest *req) {
+static int mknod_request(int sock, gnutls_session_t ssl, int id, MknodRequest *req) {
     MknodResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -374,7 +374,7 @@ static int mknod_request(int sock, SSL *ssl, int id, MknodRequest *req) {
     return 0;
 }
 
-static int link_request(int sock, SSL *ssl, int id, LinkRequest *req) {
+static int link_request(int sock, gnutls_session_t ssl, int id, LinkRequest *req) {
     LinkResponse res;
     std::string old_path = std::filesystem::weakly_canonical(base_path + req->old_path());
     std::string new_path = std::filesystem::weakly_canonical(base_path + req->new_path());
@@ -395,7 +395,7 @@ static int link_request(int sock, SSL *ssl, int id, LinkRequest *req) {
     return 0;
 }
 
-static int symlink_request(int sock, SSL *ssl, int id, SymlinkRequest *req) {
+static int symlink_request(int sock, gnutls_session_t ssl, int id, SymlinkRequest *req) {
     SymlinkResponse res;
     std::string old_path = std::filesystem::weakly_canonical(base_path + req->old_path());
     std::string new_path = std::filesystem::weakly_canonical(base_path + req->new_path());
@@ -416,7 +416,7 @@ static int symlink_request(int sock, SSL *ssl, int id, SymlinkRequest *req) {
     return 0;
 }
 
-static int read_link_request(int sock, SSL *ssl, int id, ReadLinkRequest *req) {
+static int read_link_request(int sock, gnutls_session_t ssl, int id, ReadLinkRequest *req) {
     ReadLinkResponse res;
     char buf[100];
     std::string path = base_path + req->path().c_str();
@@ -440,7 +440,7 @@ static int read_link_request(int sock, SSL *ssl, int id, ReadLinkRequest *req) {
     return 0;
 }
 
-static int statfs_request(int sock, SSL *ssl, int id, StatfsRequest *req) {
+static int statfs_request(int sock, gnutls_session_t ssl, int id, StatfsRequest *req) {
     StatfsResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -470,7 +470,7 @@ static int statfs_request(int sock, SSL *ssl, int id, StatfsRequest *req) {
     return 0;
 }
 
-static int fsync_request(int sock, SSL *ssl, int id, FsyncRequest *req) {
+static int fsync_request(int sock, gnutls_session_t ssl, int id, FsyncRequest *req) {
     FsyncResponse res;
     int err = fsync(req->fd());
     if (err < 0) {
@@ -485,7 +485,7 @@ static int fsync_request(int sock, SSL *ssl, int id, FsyncRequest *req) {
     return 0;
 }
 
-static int setxattr_request(int sock, SSL *ssl, int id, SetxattrRequest *req) {
+static int setxattr_request(int sock, gnutls_session_t ssl, int id, SetxattrRequest *req) {
     SetxattrResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -505,7 +505,7 @@ static int setxattr_request(int sock, SSL *ssl, int id, SetxattrRequest *req) {
     return 0;
 }
 
-static int getxattr_request(int sock, SSL *ssl, int id, GetxattrRequest *req) {
+static int getxattr_request(int sock, gnutls_session_t ssl, int id, GetxattrRequest *req) {
     GetxattrResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -527,7 +527,7 @@ static int getxattr_request(int sock, SSL *ssl, int id, GetxattrRequest *req) {
     return 0;
 }
 
-static int listxattr_request(int sock, SSL *ssl, int id, ListxattrRequest *req) {
+static int listxattr_request(int sock, gnutls_session_t ssl, int id, ListxattrRequest *req) {
     ListxattrResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -558,7 +558,7 @@ static int listxattr_request(int sock, SSL *ssl, int id, ListxattrRequest *req) 
     return 0;
 }
 
-static int removexattr_request(int sock, SSL *ssl, int id, RemovexattrRequest *req) {
+static int removexattr_request(int sock, gnutls_session_t ssl, int id, RemovexattrRequest *req) {
     RemovexattrResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -578,7 +578,7 @@ static int removexattr_request(int sock, SSL *ssl, int id, RemovexattrRequest *r
     return 0;
 }
 
-static int opendir_request(int sock, SSL *ssl, int id, OpendirRequest *req) {
+static int opendir_request(int sock, gnutls_session_t ssl, int id, OpendirRequest *req) {
     OpendirResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -600,7 +600,7 @@ static int opendir_request(int sock, SSL *ssl, int id, OpendirRequest *req) {
     return 0;
 }
 
-static int releasedir_fs(int sock, SSL *ssl, int id, ReleasedirRequest *req) {
+static int releasedir_fs(int sock, gnutls_session_t ssl, int id, ReleasedirRequest *req) {
     (void)req;
     ReleasedirResponse res;
     DIR *dir = dirs[req->directory_descriptor()];
@@ -623,7 +623,7 @@ static int releasedir_fs(int sock, SSL *ssl, int id, ReleasedirRequest *req) {
     return 0;
 }
 
-static int fsyncdir_request(int sock, SSL *ssl, int id, FsyncdirRequest *req) {
+static int fsyncdir_request(int sock, gnutls_session_t ssl, int id, FsyncdirRequest *req) {
     FsyncResponse res;
     DIR *dir = dirs[req->directory_descriptor()];
     int fd = dirfd(dir);
@@ -640,7 +640,7 @@ static int fsyncdir_request(int sock, SSL *ssl, int id, FsyncdirRequest *req) {
     return 0;
 }
 
-static int utimens_fs(int sock, SSL *ssl, int id, UtimensRequest *req) {
+static int utimens_fs(int sock, gnutls_session_t ssl, int id, UtimensRequest *req) {
     UtimensResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -665,7 +665,7 @@ static int utimens_fs(int sock, SSL *ssl, int id, UtimensRequest *req) {
     return 0;
 }
 
-static int access_request(int sock, SSL *ssl, int id, AccessRequest *req) {
+static int access_request(int sock, gnutls_session_t ssl, int id, AccessRequest *req) {
     AccessResponse res;
     std::string path = std::filesystem::weakly_canonical(base_path + req->path());
     if (path.substr(0, base_path.size()) != base_path) {
@@ -685,7 +685,7 @@ static int access_request(int sock, SSL *ssl, int id, AccessRequest *req) {
     return 0;
 }
 
-static int lock_request(int sock, SSL *ssl, int id, LockRequest *req) {
+static int lock_request(int sock, gnutls_session_t ssl, int id, LockRequest *req) {
     LockResponse res;
     res.set_error(EACCES);
     struct flock lock;
@@ -713,7 +713,7 @@ static int lock_request(int sock, SSL *ssl, int id, LockRequest *req) {
     return 0;
 }
 
-static int flock_request(int sock, SSL *ssl, int id, FlockRequest *req) {
+static int flock_request(int sock, gnutls_session_t ssl, int id, FlockRequest *req) {
     FlockResponse res;
     int err = flock(req->fd(), req->op());
     if (err < 0) {
@@ -728,7 +728,7 @@ static int flock_request(int sock, SSL *ssl, int id, FlockRequest *req) {
     return 0;
 }
 
-static int fallocate_request(int sock, SSL *ssl, int id, FallocateRequest *req) {
+static int fallocate_request(int sock, gnutls_session_t ssl, int id, FallocateRequest *req) {
     FallocateResponse res;
     int err = fallocate(req->fd(), req->mode(), req->offset(), req->len());
     if (err < 0) {
@@ -743,7 +743,7 @@ static int fallocate_request(int sock, SSL *ssl, int id, FallocateRequest *req) 
     return 0;
 }
 
-static int lseek_request(int sock, SSL *ssl, int id, LseekRequest *req) {
+static int lseek_request(int sock, gnutls_session_t ssl, int id, LseekRequest *req) {
     LseekResponse res;
     off_t off = lseek(req->fd(), req->offset(), req->whence());
     if (off < 0) {
@@ -759,7 +759,7 @@ static int lseek_request(int sock, SSL *ssl, int id, LseekRequest *req) {
     return 0;
 }
 
-template <typename T> int respons_handler(int sock, SSL *ssl, int id, T message) {
+template <typename T> int respons_handler(int sock, gnutls_session_t ssl, int id, T message) {
     (void)sock;
     (void)ssl;
     (void)id;

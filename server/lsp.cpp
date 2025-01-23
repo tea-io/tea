@@ -175,7 +175,7 @@ static int start_server(const std::string &language_name) {
     return 0;
 }
 
-int handle_lsp_request(int sock, SSL *ssl, int id, LspRequest *request) {
+int handle_lsp_request(int sock, gnutls_session_t ssl, int id, LspRequest *request) {
     if (is_initialization(request->payload())) {
         if (!::base_path.has_value()) {
             ::base_path = extract_base_path(request->payload());

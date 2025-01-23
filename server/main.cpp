@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
         log(ERROR, "Usage: %s <dir> <cert> <key>", argv[0]);
         return 1;
     }
+
     std::filesystem::path path = argv[1];
     std::string cert = argv[2];
     std::string key = argv[3];
