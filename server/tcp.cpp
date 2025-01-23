@@ -1,6 +1,7 @@
 #include "tcp.h"
 #include "../common/io.h"
 #include "../common/log.h"
+#include <fcntl.h>
 #include <list>
 #include <openssl/ssl.h>
 #include <sys/socket.h>
@@ -87,6 +88,11 @@ int listen(int port, recv_handlers handlers, std::string cert, std::string key) 
         }
         ssl_sessions.push_back(ssl);
         log(INFO, client_sock, "Accepted connection from %s:%d", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        err = fcntl(client_sock, F_SETFL, fcntl(client_sock, F_GETFL) | O_NONBLOCK);
+        if (err < 0) {
+            log(ERROR, sock, "Error setting socket to non-blocking: %s", strerror(errno));
+            return 1;
+        }
         std::thread t(client_handler, client_sock, ssl, handlers);
         threads.push_back(std::move(t));
     }

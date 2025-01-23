@@ -28,7 +28,6 @@ int main(int argc, char *argv[]) {
         log(ERROR, "Directory %s does not exist", argv[1]);
         return 1;
     }
-    set_debug_log(true);
     log(NONE, banner.c_str());
 
     initialize_lsp_config(path);

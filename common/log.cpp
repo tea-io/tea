@@ -7,7 +7,7 @@
 #define BLUE "\033[34m"
 #define NORMAL "\033[0m"
 
-bool debug_log = true;
+bool debug_log = false;
 
 void raw_log(int level, const char *content) {
     switch (level) {

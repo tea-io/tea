@@ -57,7 +57,6 @@ static void cleanup_routine(fuse_args *args, const int sock_fd, SSL *ssl) {
 };
 
 int main(int argc, char *argv[]) {
-    set_debug_log(true);
     log(NONE, banner.c_str());
 
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
