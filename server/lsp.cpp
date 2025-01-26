@@ -3,6 +3,8 @@
 #include <poll.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #include "lsp.h"
 
@@ -207,7 +209,9 @@ void initialize_lsp_config(std::string server_base_path) {
 
     auto config_home = getenv("XDG_CONFIG_HOME");
     if (config_home == nullptr) {
-        const auto home = getenv("HOME");
+        const auto passwd = getpwuid(getuid());
+        const auto home = passwd->pw_dir;
+
         if (home == nullptr) {
             log(ERROR, "HOME is not set. No LSPs will be available.");
             return;
