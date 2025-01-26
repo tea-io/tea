@@ -15,7 +15,7 @@ static void client_handler(int fd, SSL *ssl, recv_handlers handlers) {
     while (true) {
         int err = handle_recv(fd, ssl, handlers);
         if (err < 0) {
-            log(ERROR, fd, "Error handling message");
+            log(ERROR, fd, "Error handling message: %s", strerror(errno));
         }
         if (err == 0) {
             log(INFO, fd, "Closing connection");

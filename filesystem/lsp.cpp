@@ -41,7 +41,7 @@ static std::array<char, sizeof(LspHeader)> serialize_lsp(const LspHeader &header
 
 void set_lsp_extension_socket(const int sock) {
     if (lsp_client_sock > 0) {
-        log(ERROR, "LSP client socket already initialized");
+        log(INFO, "LSP client sock already initialized, overriding.");
     }
 
     lsp_client_sock = sock;
@@ -64,7 +64,7 @@ int lsp_request_handler(const int sock, SSL *ssl, const int id, const int langua
 
 int lsp_response_handler(int sock, SSL *ssl, int id, LspResponse *response) {
     if (lsp_client_sock < 0) {
-        log(ERROR, sock, "LSP client socket not initialized");
+        log(INFO, sock, "LSP client sock not initialized, aborting.");
         return -1;
     }
 
