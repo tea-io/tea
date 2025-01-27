@@ -1,6 +1,8 @@
 #include <cstring>
 #include <fcntl.h>
 #include <poll.h>
+#include <pwd.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -68,8 +70,10 @@ LspProcess::~LspProcess() {
     waitpid(pid, nullptr, 0);
 }
 
+static bool is_initialization(const std::string &data) { return std::regex_search(data, method_regex); }
+
 static std::optional<std::string> extract_base_path(const std::string &data) {
-    if (std::smatch is_initialize; !std::regex_search(data, is_initialize, method_regex)) {
+    if (!is_initialization(data)) {
         return std::nullopt;
     }
 
@@ -117,11 +121,8 @@ static std::string patch_paths(const std::string &data, const std::string &repla
 }
 
 void LspProcess::write(const std::string &data) const {
-    if (!::base_path.has_value()) {
-        ::base_path = extract_base_path(data);
-    }
-
     assert(base_path.has_value());
+
     const auto url_base_path = urlEncode(::base_path.value());
     const auto url_server_path = urlEncode(::server_path);
     auto patched_data = patch_paths(data, ::base_path.value(), ::server_path);
@@ -175,6 +176,14 @@ static int start_server(const std::string &language_name) {
 }
 
 int handle_lsp_request(int sock, SSL *ssl, int id, LspRequest *request) {
+    if (is_initialization(request->payload())) {
+        if (!::base_path.has_value()) {
+            ::base_path = extract_base_path(request->payload());
+        }
+
+        start_server(request->language());
+    }
+
     const auto &language = request->language();
     auto language_handler = lsp_handles.find(language);
     if (language_handler == lsp_handles.end()) {
@@ -207,7 +216,9 @@ void initialize_lsp_config(std::string server_base_path) {
 
     auto config_home = getenv("XDG_CONFIG_HOME");
     if (config_home == nullptr) {
-        const auto home = getenv("HOME");
+        const auto passwd = getpwuid(getuid());
+        const auto home = passwd->pw_dir;
+
         if (home == nullptr) {
             log(ERROR, "HOME is not set. No LSPs will be available.");
             return;

@@ -134,7 +134,7 @@ int recv_thread(SSL *ssl, int sock) {
     while (true) {
         int err = handle_recv(sock, ssl, handlers);
         if (err < 0) {
-            log(ERROR, sock, "Error handling message");
+            log(ERROR, sock, "Error handling message: %s", strerror(errno));
             return -1;
         }
         if (err == 0) {
@@ -150,11 +150,15 @@ int recv_thread(SSL *ssl, int sock) {
 static void lsp_handler(const int sock, SSL *ssl, const int server_sock) {
     while (true) {
         const auto err = handle_recv_lsp(sock, ssl, server_sock, lsp_request_handler);
-        if (err < 0) {
-            log(ERROR, sock, "Error handling message");
-        }
-        if (err == 0) {
-            log(INFO, sock, "Closing connection");
+        if (err <= 0) {
+            if (err < 0) {
+                log(ERROR, sock, "Error handling message: %s", strerror(errno));
+            }
+            if (err == 0) {
+                log(INFO, sock, "Closing connection");
+            }
+
+            set_lsp_extension_socket(-1);
             close(sock);
             return;
         }

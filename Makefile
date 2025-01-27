@@ -60,6 +60,7 @@ filesystem: filesystem/filesystem
 
 .PHONY: filesystem-debug
 filesystem-debug: C_FLAGS = $(DEV_C_FLAGS)
+filesystem-debug: filesystem
 
 filesystem/filesystem: proto/proto.pb.o
 	$(CC) $(C_FLAGS) $(FS_FLAGS) $(OPENSSL_FLAGS) -o $@ filesystem/main.cpp $(COMMON) $(FS_FILES) proto/proto.pb.o
@@ -81,6 +82,7 @@ server: server/server
 
 .PHONY: server-debug
 server-debug: C_FLAGS = $(DEV_C_FLAGS)
+server-debug: server
 
 server/server: proto/proto.pb.o
 	$(CC) $(C_FLAGS) $(SERVER_FLAGS) $(OPENSSL_FLAGS) -o $@ server/main.cpp $(COMMON) $(SERVER_FILES) proto/proto.pb.o
