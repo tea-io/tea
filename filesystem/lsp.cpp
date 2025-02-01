@@ -65,7 +65,7 @@ int lsp_request_handler(const int sock, gnutls_session_t ssl, const int id, cons
 int lsp_response_handler(int sock, gnutls_session_t ssl, int id, LspResponse *response) {
     if (lsp_client_sock < 0) {
         log(INFO, sock, "LSP client sock not initialized, aborting.");
-        return -1;
+        return 1;
     }
 
     const auto &payload = response->payload();

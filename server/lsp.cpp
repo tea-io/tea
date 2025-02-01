@@ -1,5 +1,6 @@
 #include <cstring>
 #include <fcntl.h>
+#include <filesystem>
 #include <poll.h>
 #include <pwd.h>
 #include <sys/types.h>
@@ -212,7 +213,7 @@ int handle_lsp_request(int sock, gnutls_session_t ssl, int id, LspRequest *reque
 }
 
 void initialize_lsp_config(std::string server_base_path) {
-    ::server_path = std::move(server_base_path);
+    ::server_path = std::move(std::filesystem::weakly_canonical(server_base_path));
 
     auto config_home = getenv("XDG_CONFIG_HOME");
     if (config_home == nullptr) {
