@@ -32,6 +32,7 @@ nix develop --install
 * libfuse3 
 * Makefile
 * pkg-config
+* gnutls
 * g++
 
 #### Build
